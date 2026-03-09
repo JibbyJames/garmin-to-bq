@@ -1,0 +1,412 @@
+{
+  "body_comp_2026-03-09": {
+    "startDate": "2026-03-09",
+    "endDate": "2026-03-09",
+    "dateWeightList": [],
+    "totalAverage": {
+      "from": 1773014400000,
+      "until": 1773100799999,
+      "weight": null,
+      "bmi": null,
+      "bodyFat": null,
+      "bodyWater": null,
+      "boneMass": null,
+      "muscleMass": null,
+      "physiqueRating": null,
+      "visceralFat": null,
+      "metabolicAge": null
+    }
+  },
+  "fitness_age_2026-03-09": {
+    "chronologicalAge": 34,
+    "fitnessAge": 32.612023536896196,
+    "achievableFitnessAge": 28.17910154997591,
+    "previousFitnessAge": 32.63510439681187,
+    "components": {
+      "bodyFat": {
+        "value": 24.8,
+        "targetValue": 15.9,
+        "improvementValue": 8.9,
+        "potentialAge": 29.567189755732475,
+        "priority": 1,
+        "stale": false,
+        "lastMeasurementDate": "2026-03-08"
+      },
+      "vigorousDaysAvg": {
+        "value": 1.5,
+        "targetValue": 3,
+        "potentialAge": 32.13466243713554,
+        "priority": 3,
+        "stale": false,
+        "numOfWeeksForIm": 6
+      },
+      "rhr": {
+        "value": 59,
+        "stale": false
+      },
+      "vigorousMinutesAvg": {
+        "value": 46.8,
+        "targetValue": 75,
+        "potentialAge": 32.13466243713554,
+        "priority": 2,
+        "stale": false,
+        "numOfWeeksForIm": 6
+      }
+    },
+    "lastUpdated": "2026-03-09T00:00:00.0"
+  },
+  "body_comp_2026-03-08": {
+    "startDate": "2026-03-08",
+    "endDate": "2026-03-08",
+    "dateWeightList": [
+      {
+        "samplePk": 1772965173960,
+        "date": 1772965156000,
+        "calendarDate": "2026-03-08",
+        "weight": 80949.0,
+        "bmi": 24.700000762939453,
+        "bodyFat": 24.8,
+        "bodyWater": 54.9,
+        "boneMass": 4880,
+        "muscleMass": 33840,
+        "physiqueRating": null,
+        "visceralFat": null,
+        "metabolicAge": null,
+        "sourceType": "INDEX_SCALE",
+        "timestampGMT": 1772965156000,
+        "weightDelta": null
+      }
+    ],
+    "totalAverage": {
+      "from": 1772928000000,
+      "until": 1773014399999,
+      "weight": 80949.0,
+      "bmi": 24.700000762939453,
+      "bodyFat": 24.8,
+      "bodyWater": 54.9,
+      "boneMass": 4880,
+      "muscleMass": 33840,
+      "physiqueRating": null,
+      "visceralFat": null,
+      "metabolicAge": null
+    }
+  },
+  "fitness_age_2026-03-08": {
+    "chronologicalAge": 34,
+    "fitnessAge": 32.63510439681187,
+    "achievableFitnessAge": 28.17910154997591,
+    "previousFitnessAge": 32.537012227934994,
+    "components": {
+      "bodyFat": {
+        "value": 24.9,
+        "targetValue": 15.9,
+        "improvementValue": 9.0,
+        "potentialAge": 29.567189755732475,
+        "priority": 1,
+        "stale": false,
+        "lastMeasurementDate": "2026-03-08"
+      },
+      "vigorousDaysAvg": {
+        "value": 1.5,
+        "targetValue": 3,
+        "potentialAge": 32.15774329705121,
+        "priority": 3,
+        "stale": false,
+        "numOfWeeksForIm": 6
+      },
+      "rhr": {
+        "value": 59,
+        "stale": false
+      },
+      "vigorousMinutesAvg": {
+        "value": 53.6,
+        "targetValue": 75,
+        "potentialAge": 32.15774329705121,
+        "priority": 2,
+        "stale": false,
+        "numOfWeeksForIm": 6
+      }
+    },
+    "lastUpdated": "2026-03-08T00:00:00.0"
+  },
+  "body_comp_2026-03-07": {
+    "startDate": "2026-03-07",
+    "endDate": "2026-03-07",
+    "dateWeightList": [],
+    "totalAverage": {
+      "from": 1772841600000,
+      "until": 1772927999999,
+      "weight": null,
+      "bmi": null,
+      "bodyFat": null,
+      "bodyWater": null,
+      "boneMass": null,
+      "muscleMass": null,
+      "physiqueRating": null,
+      "visceralFat": null,
+      "metabolicAge": null
+    }
+  },
+  "fitness_age_2026-03-07": {
+    "chronologicalAge": 34,
+    "fitnessAge": 32.537012227934994,
+    "achievableFitnessAge": 28.17910154997591,
+    "previousFitnessAge": 32.45087575720562,
+    "components": {
+      "bodyFat": {
+        "value": 24.5,
+        "targetValue": 15.9,
+        "improvementValue": 8.7,
+        "potentialAge": 29.567189755732475,
+        "priority": 1,
+        "stale": false,
+        "lastMeasurementDate": "2026-03-02"
+      },
+      "vigorousDaysAvg": {
+        "value": 1.5,
+        "targetValue": 3,
+        "potentialAge": 32.059651128174345,
+        "priority": 3,
+        "stale": false,
+        "numOfWeeksForIm": 6
+      },
+      "rhr": {
+        "value": 59,
+        "stale": false
+      },
+      "vigorousMinutesAvg": {
+        "value": 49.5,
+        "targetValue": 75,
+        "potentialAge": 32.059651128174345,
+        "priority": 2,
+        "stale": false,
+        "numOfWeeksForIm": 6
+      }
+    },
+    "lastUpdated": "2026-03-04T00:00:00.0"
+  },
+  "body_comp_2026-03-06": {
+    "startDate": "2026-03-06",
+    "endDate": "2026-03-06",
+    "dateWeightList": [],
+    "totalAverage": {
+      "from": 1772755200000,
+      "until": 1772841599999,
+      "weight": null,
+      "bmi": null,
+      "bodyFat": null,
+      "bodyWater": null,
+      "boneMass": null,
+      "muscleMass": null,
+      "physiqueRating": null,
+      "visceralFat": null,
+      "metabolicAge": null
+    }
+  },
+  "fitness_age_2026-03-06": {
+    "chronologicalAge": 34,
+    "fitnessAge": 32.537012227934994,
+    "achievableFitnessAge": 28.17910154997591,
+    "previousFitnessAge": 32.45087575720562,
+    "components": {
+      "bodyFat": {
+        "value": 24.5,
+        "targetValue": 15.9,
+        "improvementValue": 8.7,
+        "potentialAge": 29.567189755732475,
+        "priority": 1,
+        "stale": false,
+        "lastMeasurementDate": "2026-03-02"
+      },
+      "vigorousDaysAvg": {
+        "value": 1.5,
+        "targetValue": 3,
+        "potentialAge": 32.059651128174345,
+        "priority": 3,
+        "stale": false,
+        "numOfWeeksForIm": 6
+      },
+      "rhr": {
+        "value": 59,
+        "stale": false
+      },
+      "vigorousMinutesAvg": {
+        "value": 49.5,
+        "targetValue": 75,
+        "potentialAge": 32.059651128174345,
+        "priority": 2,
+        "stale": false,
+        "numOfWeeksForIm": 6
+      }
+    },
+    "lastUpdated": "2026-03-04T00:00:00.0"
+  },
+  "body_comp_2026-03-05": {
+    "startDate": "2026-03-05",
+    "endDate": "2026-03-05",
+    "dateWeightList": [],
+    "totalAverage": {
+      "from": 1772668800000,
+      "until": 1772755199999,
+      "weight": null,
+      "bmi": null,
+      "bodyFat": null,
+      "bodyWater": null,
+      "boneMass": null,
+      "muscleMass": null,
+      "physiqueRating": null,
+      "visceralFat": null,
+      "metabolicAge": null
+    }
+  },
+  "fitness_age_2026-03-05": {
+    "chronologicalAge": 34,
+    "fitnessAge": 32.537012227934994,
+    "achievableFitnessAge": 28.17910154997591,
+    "previousFitnessAge": 32.45087575720562,
+    "components": {
+      "bodyFat": {
+        "value": 24.5,
+        "targetValue": 15.9,
+        "improvementValue": 8.7,
+        "potentialAge": 29.567189755732475,
+        "priority": 1,
+        "stale": false,
+        "lastMeasurementDate": "2026-03-02"
+      },
+      "vigorousDaysAvg": {
+        "value": 1.5,
+        "targetValue": 3,
+        "potentialAge": 32.059651128174345,
+        "priority": 3,
+        "stale": false,
+        "numOfWeeksForIm": 6
+      },
+      "rhr": {
+        "value": 59,
+        "stale": false
+      },
+      "vigorousMinutesAvg": {
+        "value": 49.5,
+        "targetValue": 75,
+        "potentialAge": 32.059651128174345,
+        "priority": 2,
+        "stale": false,
+        "numOfWeeksForIm": 6
+      }
+    },
+    "lastUpdated": "2026-03-04T00:00:00.0"
+  },
+  "body_comp_2026-03-04": {
+    "startDate": "2026-03-04",
+    "endDate": "2026-03-04",
+    "dateWeightList": [],
+    "totalAverage": {
+      "from": 1772582400000,
+      "until": 1772668799999,
+      "weight": null,
+      "bmi": null,
+      "bodyFat": null,
+      "bodyWater": null,
+      "boneMass": null,
+      "muscleMass": null,
+      "physiqueRating": null,
+      "visceralFat": null,
+      "metabolicAge": null
+    }
+  },
+  "fitness_age_2026-03-04": {
+    "chronologicalAge": 34,
+    "fitnessAge": 32.537012227934994,
+    "achievableFitnessAge": 28.17910154997591,
+    "previousFitnessAge": 32.45087575720562,
+    "components": {
+      "bodyFat": {
+        "value": 24.5,
+        "targetValue": 15.9,
+        "improvementValue": 8.7,
+        "potentialAge": 29.567189755732475,
+        "priority": 1,
+        "stale": false,
+        "lastMeasurementDate": "2026-03-02"
+      },
+      "vigorousDaysAvg": {
+        "value": 1.5,
+        "targetValue": 3,
+        "potentialAge": 32.059651128174345,
+        "priority": 3,
+        "stale": false,
+        "numOfWeeksForIm": 6
+      },
+      "rhr": {
+        "value": 59,
+        "stale": false
+      },
+      "vigorousMinutesAvg": {
+        "value": 49.5,
+        "targetValue": 75,
+        "potentialAge": 32.059651128174345,
+        "priority": 2,
+        "stale": false,
+        "numOfWeeksForIm": 6
+      }
+    },
+    "lastUpdated": "2026-03-04T00:00:00.0"
+  },
+  "body_comp_2026-03-03": {
+    "startDate": "2026-03-03",
+    "endDate": "2026-03-03",
+    "dateWeightList": [],
+    "totalAverage": {
+      "from": 1772496000000,
+      "until": 1772582399999,
+      "weight": null,
+      "bmi": null,
+      "bodyFat": null,
+      "bodyWater": null,
+      "boneMass": null,
+      "muscleMass": null,
+      "physiqueRating": null,
+      "visceralFat": null,
+      "metabolicAge": null
+    }
+  },
+  "fitness_age_2026-03-03": {
+    "chronologicalAge": 34,
+    "fitnessAge": 32.45087575720562,
+    "achievableFitnessAge": 28.17910154997591,
+    "previousFitnessAge": 32.45087575720562,
+    "components": {
+      "bodyFat": {
+        "value": 24.5,
+        "targetValue": 15.9,
+        "improvementValue": 8.7,
+        "potentialAge": 29.567189755732475,
+        "priority": 1,
+        "stale": false,
+        "lastMeasurementDate": "2026-03-02"
+      },
+      "vigorousDaysAvg": {
+        "value": 1.5,
+        "targetValue": 3,
+        "potentialAge": 32.059651128174345,
+        "priority": 3,
+        "stale": false,
+        "numOfWeeksForIm": 6
+      },
+      "rhr": {
+        "value": 58,
+        "stale": false
+      },
+      "vigorousMinutesAvg": {
+        "value": 50.0,
+        "targetValue": 75,
+        "potentialAge": 32.059651128174345,
+        "priority": 2,
+        "stale": false,
+        "numOfWeeksForIm": 6
+      }
+    },
+    "lastUpdated": "2026-03-03T00:00:00.0"
+  }
+}

@@ -68,8 +68,8 @@ def main():
     date_list = [today - datetime.timedelta(days=x) for x in range(14)]
     
     # Print Header
-    print(f"{'Date':<12} | {'RHR':<5} | {'Body Fat':<8} | {'VO2 Max':<8} | {'Fitness Age':<11} | {'Youth Bonus':<11} | {'Sleep Score'}")
-    print("-" * 94)
+    print(f"{'Date':<12} | {'RHR':<5} | {'Body Fat':<8} | {'VO2 Max':<8} | {'Fitness Age':<11} | {'Youth Bonus':<11} | {'Sleep Score':<11} | {'Avg Stress'}")
+    print("-" * 110)
 
     for check_date in reversed(date_list):
         date_str = check_date.isoformat()
@@ -124,8 +124,16 @@ def main():
                         if overall and overall.get('value') is not None:
                             sleep_score = overall.get('value')
 
+            # All-Day Stress
+            # stress_data returns a list of dictionaries if present, or dict directly
+            avg_stress = '-'
+            # We can also get average stress directly from the stats summary we already fetched
+            if stats and isinstance(stats, dict):
+                if stats.get('averageStressLevel') is not None:
+                    avg_stress = stats.get('averageStressLevel')
+
             # Print the row
-            print(f"{date_str:<12} | {rhr:<5} | {fat:<8} | {vo2:<8} | {f_age:<11} | {youth_bonus:<11} | {sleep_score}")
+            print(f"{date_str:<12} | {rhr:<5} | {fat:<8} | {vo2:<8} | {f_age:<11} | {youth_bonus:<11} | {sleep_score:<11} | {avg_stress}")
 
         except Exception as e:
             # This will only catch actual connection errors, not missing data
