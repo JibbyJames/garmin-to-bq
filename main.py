@@ -6,6 +6,7 @@ import logging
 import os
 import json
 import pandas as pd
+import pandas_gbq
 from getpass import getpass
 from pathlib import Path
 from garminconnect import Garmin
@@ -59,7 +60,13 @@ ACTIVITY_SCHEMA = [
 
 
 
-logging.basicConfig(level=logging.INFO)
+if IS_CLOUD_FUNCTION:
+    import google.cloud.logging
+    client = google.cloud.logging.Client()
+    client.setup_logging()
+else:
+    logging.basicConfig(level=logging.INFO)
+
 logger = logging.getLogger(__name__)
 
 # --- Secret Manager Helpers ---

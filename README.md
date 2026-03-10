@@ -61,6 +61,70 @@ This script is also configured to run automatically as a Google Cloud Function. 
 
 Make sure the GCP Service Account executing the function has **Secret Manager Secret Accessor** (to read credentials) and **Secret Manager Secret Version Adder** (to save new tokens) roles.
 
+### Deployment Guide
+
+You can deploy the Cloud Function, Service Account, and Cloud Scheduler Job using the `gcloud` CLI. Ensure you are in the project root containing `main.py` and `requirements.txt`.
+
+```bash
+# Set your project ID
+export PROJECT_ID="james-gcp-project"
+gcloud config set project $PROJECT_ID
+
+# 1. Create a dedicated Service Account for Garmin Sync
+gcloud iam service-accounts create garmin \
+  --display-name="Garmin Sync Service Account"
+
+# 2. Grant Secret Manager access 
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:garmin@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:garmin@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --role="roles/secretmanager.secretVersionAdder"
+
+# 3. Grant BigQuery access
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:garmin@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --role="roles/bigquery.dataEditor"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:garmin@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --role="roles/bigquery.jobUser"
+
+# 4. Deploy the 2nd Gen Cloud Function
+gcloud functions deploy garmin-to-bq \
+  --gen2 \
+  --runtime=python313 \
+  --region=europe-west1 \
+  --source=. \
+  --entry-point=cloud_function_entry \
+  --trigger-http \
+  --no-allow-unauthenticated \
+  --service-account="garmin@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --timeout=540s \
+  --memory=1024MB
+
+# 5. Allow the Service Account to invoke the function (Cloud Run Invoker for Gen 2)
+gcloud run services add-iam-policy-binding garmin-to-bq \
+  --region=europe-west1 \
+  --member="serviceAccount:garmin@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --role="roles/run.invoker"
+
+# 6. Create the Cloud Scheduler Job to trigger the function every 2 hours
+# Retrieve the deployed function URL
+FUNCTION_URL=$(gcloud functions describe garmin-to-bq --gen2 --region=europe-west1 --format="value(serviceConfig.uri)")
+
+# Create the scheduler job
+gcloud scheduler jobs create http garmin-to-bq \
+  --schedule="0 8,10,12,14,16,18,20,22 * * *" \
+  --uri=$FUNCTION_URL \
+  --http-method=POST \
+  --oidc-service-account-email="garmin@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --oidc-token-audience=$FUNCTION_URL \
+  --location=europe-west1
+```
+
 ## Inspiration & References
 
 The extraction logic uses the [python-garminconnect](https://github.com/cyberjunky/python-garminconnect) library. 

@@ -1,0 +1,8 @@
+garminconnect
+google-cloud-bigquery
+google-cloud-secret-manager
+pandas
+pyarrow
+db-dtypes
+pandas-gbq
+google-cloud-logging
