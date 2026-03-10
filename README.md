@@ -9,7 +9,7 @@ Extracts summary health metrics for each day:
 - **Date**
 - **Resting Heart Rate (RHR)**
 - **Total Steps**
-- **Body Fat %**
+- **Weight (kg)**, **Body Fat %**, & **Muscle Mass (kg)**
 - **VO2 Max** (Precise Value)
 - **Fitness Age** & **Youth Bonus**
 - **Vigorous Minutes** (Average from the last 6 weeks)
@@ -35,7 +35,7 @@ You can run the script via the command line to specify custom date ranges and ex
 - `--start-date YYYY-MM-DD`: The date to start fetching data from.
 - `--end-date YYYY-MM-DD`: The date to stop fetching data. (If `--start-date` is provided but this isn't, it defaults to today).
 - `--export-csv`: A flag that, if present, enables exporting the console tables into an `exports/` folder with timestamped filenames.
-- `--export-bq {overwrite,append}`: Exports data to BigQuery. Requires `BQ_PROJECT` and `BQ_DATASET` environment variables to be set, or updated as constants inside `main.py`.
+- `--export-bq {overwrite,append}`: Exports data to BigQuery. Requires `BQ_PROJECT` and `BQ_DATASET` constants to be set in `main.py`.
 
 **Examples:**
 ```bash

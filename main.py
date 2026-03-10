@@ -22,7 +22,9 @@ DAILY_SCHEMA = [
     bigquery.SchemaField("Date", "DATE", description="The date of the stats"),
     bigquery.SchemaField("RestingHeartRate", "INTEGER", description="Resting heart rate in beats per minute"),
     bigquery.SchemaField("Steps", "INTEGER", description="Total number of steps taken in the day"),
+    bigquery.SchemaField("WeightKg", "FLOAT", description="Weight in kilograms"),
     bigquery.SchemaField("BodyFat", "FLOAT", description="Body fat percentage"),
+    bigquery.SchemaField("MuscleMassKg", "FLOAT", description="Skeletal muscle mass in kilograms"),
     bigquery.SchemaField("VO2Max", "FLOAT", description="VO2 max estimate"),
     bigquery.SchemaField("FitnessAge", "FLOAT", description="Estimated fitness age"),
     bigquery.SchemaField("YouthBonus", "FLOAT", description="Youth bonus derived from fitness age"),
@@ -160,8 +162,8 @@ def main():
     
     # Print Header
     print("--- Daily Stats ---")
-    print(f"{'Date':<12} | {'RestingHeartRate':<16} | {'Steps':<6} | {'BodyFat':<8} | {'VO2Max':<8} | {'FitnessAge':<11} | {'YouthBonus':<11} | {'VigorousMinutesAvg':<18} | {'SleepScore':<11} | {'AverageStress':<13}")
-    print("-" * 141)
+    print(f"{'Date':<12} | {'RestingHeartRate':<16} | {'Steps':<6} | {'WeightKg':<8} | {'BodyFat':<8} | {'MuscleMassKg':<12} | {'VO2Max':<8} | {'FitnessAge':<11} | {'YouthBonus':<11} | {'VigorousMinutesAvg':<18} | {'SleepScore':<11} | {'AverageStress':<13}")
+    print("-" * 167)
 
     for check_date in reversed(date_list):
         date_str = check_date.isoformat()
@@ -177,12 +179,19 @@ def main():
             # Resting Heart Rate
             rhr = (stats or {}).get('restingHeartRate', '-')
             
-            # Body fat
+            # Body Comp (Fat, Weight, Muscle Mass in grams)
             fat = '-'
+            weight = '-'
+            muscle = '-'
             if body and isinstance(body, dict):
                 avg = body.get('totalAverage', {})
-                if avg and avg.get('bodyFat') is not None:
-                    fat = avg.get('bodyFat')
+                if avg:
+                    if avg.get('bodyFat') is not None:
+                        fat = avg.get('bodyFat')
+                    if avg.get('weight') is not None:
+                        weight = round(avg.get('weight') / 1000, 2)
+                    if avg.get('muscleMass') is not None:
+                        muscle = round(avg.get('muscleMass') / 1000, 2)
 
             # VO2 Max
             vo2 = '-'
@@ -235,8 +244,8 @@ def main():
                     steps = stats.get('totalSteps')
 
             # Print the row
-            print(f"{date_str:<12} | {rhr:<16} | {steps:<6} | {fat:<8} | {vo2:<8} | {f_age:<11} | {youth_bonus:<11} | {vigorous_avg:<18} | {sleep_score:<11} | {avg_stress:<13}")
-            daily_rows.append([date_str, rhr, steps, fat, vo2, f_age, youth_bonus, vigorous_avg, sleep_score, avg_stress])
+            print(f"{date_str:<12} | {rhr:<16} | {steps:<6} | {weight:<8} | {fat:<8} | {muscle:<12} | {vo2:<8} | {f_age:<11} | {youth_bonus:<11} | {vigorous_avg:<18} | {sleep_score:<11} | {avg_stress:<13}")
+            daily_rows.append([date_str, rhr, steps, weight, fat, muscle, vo2, f_age, youth_bonus, vigorous_avg, sleep_score, avg_stress])
 
         except Exception as e:
             # This will only catch actual connection errors, not missing data
