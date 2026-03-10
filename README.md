@@ -17,7 +17,7 @@ Extracts summary health metrics for each day:
 
 ### 2. Recent Activities
 Extracts individual logged activities (e.g. Strength, Cycling, Running):
-- **Start Time** & **Activity Name**
+- **Start Time** & **Activity Name** (Activity type is also collected)
 - **Duration (Min)** & **Calories**
 - **Average HR** & **Max HR**
 - **Moderate / Vigorous Intensity Minutes**
@@ -35,7 +35,9 @@ You can run the script via the command line to specify custom date ranges and ex
 - `--start-date YYYY-MM-DD`: The date to start fetching data from.
 - `--end-date YYYY-MM-DD`: The date to stop fetching data. (If `--start-date` is provided but this isn't, it defaults to today).
 - `--export-csv`: A flag that, if present, enables exporting the console tables into an `exports/` folder with timestamped filenames.
-- `--export-bq {overwrite,append}`: Exports data to BigQuery. Requires `BQ_PROJECT` and `BQ_DATASET` constants to be set in `main.py`.
+- `--export-bq {overwrite,append}`: Exports data to BigQuery. Requires `BQ_PROJECT` and `BQ_DATASET` constants to be set in `main.py`. **Note**: If `append` is used, any existing records within the chosen date range will be deleted before new records are inserted to prevent duplicates.
+- `--skip {daily,activities}`: Skips either daily stats or activities api call
+- `--quiet`: Suppresses printing the formatted tables to the console (useful for automated runs).
 
 **Examples:**
 ```bash
@@ -49,8 +51,18 @@ python main.py --start-date 2026-03-05 --export-csv
 python main.py --start-date 2026-03-01 --export-bq overwrite
 ```
 
+## Running as a GCP Cloud Function
+
+This script is also configured to run automatically as a Google Cloud Function. When the script detects it is running in a Cloud Function environment (via the `K_SERVICE` or `FUNCTION_TARGET` environment variables), it bypasses all interactive shell prompts and automatically:
+
+1. Retrieves your Garmin credentials from Google Secret Manager (`garmin-email` and `garmin-password`).
+2. Retrieves and subsequently saves authentication session tokens to Secret Manager (`garmin-tokens`) to prevent needing a full login and MFA on every execution.
+3. Automatically runs yesterday's and today's dates, writing in BigQuery `--append` mode via the `cloud_function_entry` entry point.
+
+Make sure the GCP Service Account executing the function has **Secret Manager Secret Accessor** (to read credentials) and **Secret Manager Secret Version Adder** (to save new tokens) roles.
+
 ## Inspiration & References
 
-The extraction logic uses the excellent [python-garminconnect](https://github.com/cyberjunky/python-garminconnect) library. 
+The extraction logic uses the [python-garminconnect](https://github.com/cyberjunky/python-garminconnect) library. 
 
 Many of the precise metric extractions (like VO2 Max, Sleep Score, HR Zones, and Body Composition) were modeled directly from the library's primary [demo.py file](https://github.com/cyberjunky/python-garminconnect/blob/master/demo.py).

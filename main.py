@@ -4,11 +4,13 @@ import sys
 import datetime
 import logging
 import os
+import json
 import pandas as pd
 from getpass import getpass
 from pathlib import Path
 from garminconnect import Garmin
 from google.cloud import bigquery
+from google.cloud import secretmanager
 from google.cloud.exceptions import NotFound
 
 # --- BigQuery Configuration ---
@@ -16,6 +18,9 @@ BQ_PROJECT = "james-gcp-project"
 BQ_DATASET = "garmin"
 BQ_DAILY_TABLE = "daily_stats"
 BQ_ACTIVITY_TABLE = "activities"
+
+# Check if running as a cloud function
+IS_CLOUD_FUNCTION = os.environ.get('K_SERVICE') is not None or os.environ.get('FUNCTION_TARGET') is not None
 
 # Define Schemas (used for console grouping, CSV headers, and BQ schema)
 DAILY_SCHEMA = [
@@ -57,13 +62,54 @@ ACTIVITY_SCHEMA = [
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# --- Secret Manager Helpers ---
+def get_secret(secret_id, project_id=BQ_PROJECT):
+    client = secretmanager.SecretManagerServiceClient()
+    name = f"projects/{project_id}/secrets/{secret_id}/versions/latest"
+    try:
+        response = client.access_secret_version(request={"name": name})
+        return response.payload.data.decode("UTF-8")
+    except Exception as e:
+        logger.warning(f"Failed to access secret {secret_id}: {e}")
+        return None
+
+def update_secret(secret_id, payload, project_id=BQ_PROJECT):
+    client = secretmanager.SecretManagerServiceClient()
+    parent = f"projects/{project_id}/secrets/{secret_id}"
+    try:
+        response = client.add_secret_version(
+            request={"parent": parent, "payload": {"data": payload.encode("UTF-8")}}
+        )
+        logger.info(f"Updated secret {secret_id} to version {response.name}")
+    except Exception as e:
+        logger.error(f"Failed to update secret {secret_id}: {e}")
+
+def save_tokens_to_secret(secret_id, tokenstore_path):
+    if tokenstore_path.exists():
+        tokens = {}
+        for filepath in tokenstore_path.iterdir():
+            if filepath.is_file():
+                tokens[filepath.name] = filepath.read_text()
+        if tokens:
+            update_secret(secret_id, json.dumps(tokens))
+
+def load_tokens_from_secret(secret_id, tokenstore_path):
+    tokens_json = get_secret(secret_id)
+    if tokens_json:
+        tokenstore_path.mkdir(parents=True, exist_ok=True)
+        try:
+            tokens = json.loads(tokens_json)
+            for filename, content in tokens.items():
+                (tokenstore_path / filename).write_text(content)
+        except json.JSONDecodeError:
+            logger.error("Failed to decode token JSON from secret manager")
+
 def init_api():
     """Initialize Garmin API with verbose feedback."""
-    tokenstore = os.getenv("GARMINTOKENS", "~/.garminconnect")
-    tokenstore_path = Path(tokenstore).expanduser()
     
-    email = os.getenv("EMAIL")
-    password = os.getenv("PASSWORD") # If using a raw string, do: r"your_pass"
+    
+    tokenstore_path = Path("/tmp/.garminconnect" if IS_CLOUD_FUNCTION else "~/.garminconnect").expanduser()
+    load_tokens_from_secret("garmin-tokens", tokenstore_path)
 
     # Try token-based login first
     if tokenstore_path.exists():
@@ -76,12 +122,23 @@ def init_api():
         except Exception as e:
             logger.warning(f"⚠️ Token login failed: {e}. Falling back to credentials.")
 
-    # Credential-based login
-    if not email:
-        email = input("Login email: ")
-    if not password:
-        password = getpass("Enter password: ")
+    # Get credentials from secrets
+    email = get_secret("garmin-email")
+    password = get_secret("garmin-password")
 
+    # If secrets are not found, prompt the user (only if not running as a cloud function)
+    if not IS_CLOUD_FUNCTION:
+        if not email:
+            email = input("Login email: ")
+        if not password:
+            password = getpass("Enter password: ")
+    
+    # If no email or password is provided, return None
+    if not email or not password:
+         logger.error("❌ Missing email or password.")
+         return None
+
+    # Try credential-based login
     try:
         logger.info(f"Attempting manual login for: {email}")
         # Note: 'is_cn=False' is for non-China accounts
@@ -90,6 +147,9 @@ def init_api():
 
         # Handle MFA
         if result[0] == "needs_mfa":
+            if IS_CLOUD_FUNCTION:
+                 logger.error("❌ MFA required but running as Cloud Function.")
+                 return None
             logger.info("🔐 MFA Required! Check your email/SMS.")
             mfa_code = input("Enter MFA Code: ")
             garmin.resume_login(result[1], mfa_code)
@@ -97,24 +157,27 @@ def init_api():
         # Save tokens for next time
         garmin.garth.dump(str(tokenstore_path))
         logger.info(f"✅ Login successful. Tokens saved to {tokenstore_path}")
+        if IS_CLOUD_FUNCTION:
+            save_tokens_to_secret("garmin-tokens", tokenstore_path)
         return garmin
 
     except Exception as e:
         logger.error(f"❌ LOGIN FAILED: {e}")
         return None
 
-def main():
+def main(cmd_args=None):
     parser = argparse.ArgumentParser(description="Fetch Garmin Connect data.")
     parser.add_argument("--start-date", type=str, help="Start date in YYYY-MM-DD format.")
     parser.add_argument("--end-date", type=str, help="End date in YYYY-MM-DD format.")
     parser.add_argument("--export-csv", action="store_true", help="Export data to CSV files.")
     parser.add_argument("--export-bq", choices=['overwrite', 'append'], help="Export data to BigQuery")
     parser.add_argument("--skip", choices=['daily', 'activities'], help="Skip either daily stats or activities api")
-    args = parser.parse_args()
+    parser.add_argument("--quiet", action="store_true", help="Do not print formatted tables to console")
+    args = parser.parse_args(cmd_args)
 
     api = init_api()
     if not api:
-        print("Login failed.")
+        logger.error("Login failed.")
         sys.exit(1)
 
     # Setup date range and timestamp
@@ -124,27 +187,27 @@ def main():
         try:
             start_date = datetime.datetime.strptime(args.start_date, "%Y-%m-%d").date()
         except ValueError:
-            print("Error: --start-date must be in YYYY-MM-DD format.")
+            logger.error("Error: --start-date must be in YYYY-MM-DD format.")
             sys.exit(1)
             
         if args.end_date:
             try:
                 end_date = datetime.datetime.strptime(args.end_date, "%Y-%m-%d").date()
             except ValueError:
-                print("Error: --end-date must be in YYYY-MM-DD format.")
+                logger.error("Error: --end-date must be in YYYY-MM-DD format.")
                 sys.exit(1)
         else:
             end_date = today
             
     elif args.end_date:
-        print("Error: Cannot provide --end-date without --start-date.")
+        logger.error("Error: Cannot provide --end-date without --start-date.")
         sys.exit(1)
     else:
         end_date = today
         start_date = end_date - datetime.timedelta(days=14)
 
     if start_date > end_date:
-        print("Error: --start-date must be before or equal to --end-date.")
+        logger.error("Error: --start-date must be before or equal to --end-date.")
         sys.exit(1)
 
     delta = end_date - start_date
@@ -163,10 +226,13 @@ def main():
     daily_rows = []
     
     if args.skip != 'daily':
+        logger.info(f"Fetching daily stats from {start_date} to {end_date}...")
+        
         # Print Header
-        print("--- Daily Stats ---")
-        print(f"{'Date':<12} | {'RestingHeartRate':<16} | {'Steps':<6} | {'WeightKg':<8} | {'BodyFat':<8} | {'MuscleMassKg':<12} | {'VO2Max':<8} | {'FitnessAge':<11} | {'YouthBonus':<11} | {'VigorousMinutesAvg':<18} | {'SleepScore':<11} | {'AverageStress':<13}")
-        print("-" * 167)
+        if not args.quiet:
+            print("--- Daily Stats ---")
+            print(f"{'Date':<12} | {'RestingHeartRate':<16} | {'Steps':<6} | {'WeightKg':<8} | {'BodyFat':<8} | {'MuscleMassKg':<12} | {'VO2Max':<8} | {'FitnessAge':<11} | {'YouthBonus':<11} | {'VigorousMinutesAvg':<18} | {'SleepScore':<11} | {'AverageStress':<13}")
+            print("-" * 167)
 
         for check_date in reversed(date_list):
             date_str = check_date.isoformat()
@@ -247,12 +313,18 @@ def main():
                         steps = stats.get('totalSteps')
 
                 # Print the row
-                print(f"{date_str:<12} | {rhr:<16} | {steps:<6} | {weight:<8} | {fat:<8} | {muscle:<12} | {vo2:<8} | {f_age:<11} | {youth_bonus:<11} | {vigorous_avg:<18} | {sleep_score:<11} | {avg_stress:<13}")
+                if not args.quiet:
+                    print(f"{date_str:<12} | {rhr:<16} | {steps:<6} | {weight:<8} | {fat:<8} | {muscle:<12} | {vo2:<8} | {f_age:<11} | {youth_bonus:<11} | {vigorous_avg:<18} | {sleep_score:<11} | {avg_stress:<13}")
                 daily_rows.append([date_str, rhr, steps, weight, fat, muscle, vo2, f_age, youth_bonus, vigorous_avg, sleep_score, avg_stress])
 
             except Exception as e:
                 # This will only catch actual connection errors, not missing data
-                print(f"{date_str:<12} | CRITICAL ERROR: {e}")
+                if not args.quiet:
+                    print(f"{date_str:<12} | CRITICAL ERROR: {e}")
+                else:
+                    logger.error(f"{date_str:<12} | CRITICAL ERROR: {e}")
+                    
+        logger.info(f"Fetched {len(daily_rows)} daily stats records.")
 
         # Write daily CSV
         if args.export_csv:
@@ -260,7 +332,7 @@ def main():
                 writer = csv.writer(f)
                 writer.writerow(daily_headers)
                 writer.writerows(daily_rows)
-            print(f"\n✅ Exported daily stats to {daily_csv_path}")
+            logger.info(f"✅ Exported daily stats to {daily_csv_path}")
 
         # Write daily BigQuery
         if args.export_bq and daily_rows:
@@ -277,12 +349,24 @@ def main():
                 
                 daily_table_id = f"{BQ_PROJECT}.{BQ_DATASET}.{BQ_DAILY_TABLE}"
                 
+                if args.export_bq == 'append':
+                    delete_query = f"""
+                        DELETE FROM `{daily_table_id}`
+                        WHERE Date >= '{date_list[-1].isoformat()}' AND Date <= '{date_list[0].isoformat()}'
+                    """
+                    try:
+                        logger.info(f"Deleting existing records between {date_list[-1].isoformat()} and {date_list[0].isoformat()} before appending...")
+                        delete_job = client.query(delete_query)
+                        delete_job.result()
+                    except NotFound:
+                         logger.info("Table does not exist yet. Skipping delete.")
+                
                 job_config = bigquery.LoadJobConfig(
                     schema=DAILY_SCHEMA,
                     write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE if args.export_bq == 'overwrite' else bigquery.WriteDisposition.WRITE_APPEND
                 )
                 
-                print(f"Uploading Daily Stats to BigQuery ({args.export_bq})...")
+                logger.info(f"Uploading Daily Stats to BigQuery ({args.export_bq})...")
                 job = client.load_table_from_dataframe(df_daily, daily_table_id, job_config=job_config)
                 job.result()  # Wait for the job to complete.
                 
@@ -291,21 +375,23 @@ def main():
                 table.description = "Daily health and fitness statistics from Garmin Connect"
                 client.update_table(table, ["description"])
                 
-                print(f"✅ Exported daily stats to BigQuery table {daily_table_id}")
+                logger.info(f"✅ Exported daily stats to BigQuery table {daily_table_id}")
             except Exception as e:
-                print(f"❌ Failed to export daily stats to BigQuery: {e}")
+                logger.error(f"❌ Failed to export daily stats to BigQuery: {e}")
 
     if args.skip != 'activities':
-        print("\n\n")
-        print("--- Recent Activities ---")
-        print(f"{'StartTime':<16} | {'ActivityName':<20} | {'ActivityType':<20} | {'DurationMin':<11} | {'Calories':<8} | {'AverageHR':<9} | {'MaxHR':<5} | {'ModerateIntensityMinutes':<24} | {'VigorousIntensityMinutes':<24} | {'Zone1':<8} | {'Zone2':<8} | {'Zone3':<8} | {'Zone4':<8} | {'Zone5':<8}")
-        print("-" * 193)
+        start_date_str = date_list[-1].isoformat()
+        end_date_str = date_list[0].isoformat()
+        logger.info(f"Fetching activities from {start_date_str} to {end_date_str}...")
+        
+        if not args.quiet:
+            print("\n\n")
+            print("--- Recent Activities ---")
+            print(f"{'StartTime':<16} | {'ActivityName':<20} | {'ActivityType':<20} | {'DurationMin':<11} | {'Calories':<8} | {'AverageHR':<9} | {'MaxHR':<5} | {'ModerateIntensityMinutes':<24} | {'VigorousIntensityMinutes':<24} | {'Zone1':<8} | {'Zone2':<8} | {'Zone3':<8} | {'Zone4':<8} | {'Zone5':<8}")
+            print("-" * 193)
 
         activity_headers = [field.name for field in ACTIVITY_SCHEMA]
         activity_rows = []
-
-        start_date_str = date_list[-1].isoformat()
-        end_date_str = date_list[0].isoformat()
 
         def format_duration(seconds):
             if not seconds:
@@ -337,11 +423,17 @@ def main():
                 z4 = format_duration(activity.get('hrTimeInZone_4'))
                 z5 = format_duration(activity.get('hrTimeInZone_5'))
                 
-                print(f"{start_time:<16} | {name:<20} | {activity_type:<20} | {duration_m:<11} | {cal:<8} | {avg_hr:<9} | {max_hr:<5} | {mod_min:<24} | {vig_min:<24} | {z1:<8} | {z2:<8} | {z3:<8} | {z4:<8} | {z5:<8}")
+                if not args.quiet:
+                    print(f"{start_time:<16} | {name:<20} | {activity_type:<20} | {duration_m:<11} | {cal:<8} | {avg_hr:<9} | {max_hr:<5} | {mod_min:<24} | {vig_min:<24} | {z1:<8} | {z2:<8} | {z3:<8} | {z4:<8} | {z5:<8}")
                 activity_rows.append([start_time, name, activity_type, duration_m, cal, avg_hr, max_hr, mod_min, vig_min, z1, z2, z3, z4, z5])
 
         except Exception as e:
-             print(f"Error fetching activities: {e}")
+             if not args.quiet:
+                 print(f"Error fetching activities: {e}")
+             else:
+                 logger.error(f"Error fetching activities: {e}")
+                 
+        logger.info(f"Fetched {len(activity_rows)} activities records.")
 
         # Write activity CSV
         if args.export_csv and activity_rows:
@@ -349,7 +441,7 @@ def main():
                 writer = csv.writer(f)
                 writer.writerow(activity_headers)
                 writer.writerows(activity_rows)
-            print(f"✅ Exported activities to {activity_csv_path}")
+            logger.info(f"✅ Exported activities to {activity_csv_path}")
 
         # Write activity BigQuery
         if args.export_bq and activity_rows:
@@ -369,12 +461,24 @@ def main():
                 
                 activity_table_id = f"{BQ_PROJECT}.{BQ_DATASET}.{BQ_ACTIVITY_TABLE}"
                 
+                if args.export_bq == 'append':
+                    delete_query = f"""
+                        DELETE FROM `{activity_table_id}`
+                        WHERE DATE(StartTime) >= '{start_date_str}' AND DATE(StartTime) <= '{end_date_str}'
+                    """
+                    try:
+                        logger.info(f"Deleting existing records between {start_date_str} and {end_date_str} before appending...")
+                        delete_job = client.query(delete_query)
+                        delete_job.result()
+                    except NotFound:
+                        logger.info("Table does not exist yet. Skipping delete.")
+                
                 job_config = bigquery.LoadJobConfig(
                     schema=ACTIVITY_SCHEMA,
                     write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE if args.export_bq == 'overwrite' else bigquery.WriteDisposition.WRITE_APPEND
                 )
                 
-                print(f"Uploading Activities to BigQuery ({args.export_bq})...")
+                logger.info(f"Uploading Activities to BigQuery ({args.export_bq})...")
                 job = client.load_table_from_dataframe(df_activity, activity_table_id, job_config=job_config)
                 job.result()
                 
@@ -383,9 +487,25 @@ def main():
                 table.description = "Detailed activity records from Garmin Connect"
                 client.update_table(table, ["description"])
                 
-                print(f"✅ Exported activities to BigQuery table {activity_table_id}")
+                logger.info(f"✅ Exported activities to BigQuery table {activity_table_id}")
             except Exception as e:
-                print(f"❌ Failed to export activities to BigQuery: {e}")
+                logger.error(f"❌ Failed to export activities to BigQuery: {e}")
+
+def cloud_function_entry(request):
+    """Entry point for GCP Cloud Function."""
+    today = datetime.date.today()
+    yesterday = today - datetime.timedelta(days=1)
+    
+    cmd_args = [
+        "--start-date", yesterday.isoformat(),
+        "--end-date", today.isoformat(),
+        "--export-bq", "append",
+        "--quiet"
+    ]
+    
+    logger.info(f"Running Cloud Function with args: {cmd_args}")
+    main(cmd_args)
+    return "OK", 200
 
 if __name__ == "__main__":
     main()
