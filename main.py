@@ -35,7 +35,8 @@ DAILY_SCHEMA = [
 
 ACTIVITY_SCHEMA = [
     bigquery.SchemaField("StartTime", "DATETIME", description="Start time of the activity"),
-    bigquery.SchemaField("ActivityName", "STRING", description="Name/type of the activity"),
+    bigquery.SchemaField("ActivityName", "STRING", description="Name of the activity"),
+    bigquery.SchemaField("ActivityType", "STRING", description="Type of activity"),
     bigquery.SchemaField("DurationMin", "FLOAT", description="Duration of the activity in minutes"),
     bigquery.SchemaField("Calories", "INTEGER", description="Calories burned during the activity"),
     bigquery.SchemaField("AverageHR", "INTEGER", description="Average heart rate during the activity"),
@@ -108,6 +109,7 @@ def main():
     parser.add_argument("--end-date", type=str, help="End date in YYYY-MM-DD format.")
     parser.add_argument("--export-csv", action="store_true", help="Export data to CSV files.")
     parser.add_argument("--export-bq", choices=['overwrite', 'append'], help="Export data to BigQuery")
+    parser.add_argument("--skip", choices=['daily', 'activities'], help="Skip either daily stats or activities api")
     args = parser.parse_args()
 
     api = init_api()
@@ -160,227 +162,230 @@ def main():
     daily_headers = [field.name for field in DAILY_SCHEMA]
     daily_rows = []
     
-    # Print Header
-    print("--- Daily Stats ---")
-    print(f"{'Date':<12} | {'RestingHeartRate':<16} | {'Steps':<6} | {'WeightKg':<8} | {'BodyFat':<8} | {'MuscleMassKg':<12} | {'VO2Max':<8} | {'FitnessAge':<11} | {'YouthBonus':<11} | {'VigorousMinutesAvg':<18} | {'SleepScore':<11} | {'AverageStress':<13}")
-    print("-" * 167)
+    if args.skip != 'daily':
+        # Print Header
+        print("--- Daily Stats ---")
+        print(f"{'Date':<12} | {'RestingHeartRate':<16} | {'Steps':<6} | {'WeightKg':<8} | {'BodyFat':<8} | {'MuscleMassKg':<12} | {'VO2Max':<8} | {'FitnessAge':<11} | {'YouthBonus':<11} | {'VigorousMinutesAvg':<18} | {'SleepScore':<11} | {'AverageStress':<13}")
+        print("-" * 167)
 
-    for check_date in reversed(date_list):
-        date_str = check_date.isoformat()
-        
-        try:
-            # Multi-call: Fetch data for the day
-            stats = api.get_stats(date_str)
-            body = api.get_body_composition(date_str)
-            metrics = api.get_max_metrics(date_str)
-            fage_data = api.get_fitnessage_data(date_str)
-            sleep_data = api.get_sleep_data(date_str)
-
-            # Resting Heart Rate
-            rhr = (stats or {}).get('restingHeartRate', '-')
+        for check_date in reversed(date_list):
+            date_str = check_date.isoformat()
             
-            # Body Comp (Fat, Weight, Muscle Mass in grams)
-            fat = '-'
-            weight = '-'
-            muscle = '-'
-            if body and isinstance(body, dict):
-                avg = body.get('totalAverage', {})
-                if avg:
-                    if avg.get('bodyFat') is not None:
-                        fat = avg.get('bodyFat')
-                    if avg.get('weight') is not None:
-                        weight = round(avg.get('weight') / 1000, 2)
-                    if avg.get('muscleMass') is not None:
-                        muscle = round(avg.get('muscleMass') / 1000, 2)
+            try:
+                # Multi-call: Fetch data for the day
+                stats = api.get_stats(date_str)
+                body = api.get_body_composition(date_str)
+                metrics = api.get_max_metrics(date_str)
+                fage_data = api.get_fitnessage_data(date_str)
+                sleep_data = api.get_sleep_data(date_str)
 
-            # VO2 Max
-            vo2 = '-'
-            if metrics and isinstance(metrics, list) and len(metrics) > 0:
-                generic = metrics[0].get('generic', {})
-                if generic and generic.get('vo2MaxPreciseValue') is not None:
-                    vo2 = generic.get('vo2MaxPreciseValue')
-
-            # Fitness Age & Chronological Age
-            f_age = '-'
-            youth_bonus = '-'
-            vigorous_avg = '-'
-            if fage_data and isinstance(fage_data, dict):
-                c_age_val = fage_data.get('chronologicalAge')
-                f_age_val = fage_data.get('fitnessAge')
+                # Resting Heart Rate
+                rhr = (stats or {}).get('restingHeartRate', '-')
                 
-                if f_age_val is not None:
-                    f_age = round(f_age_val, 2)
+                # Body Comp (Fat, Weight, Muscle Mass in grams)
+                fat = '-'
+                weight = '-'
+                muscle = '-'
+                if body and isinstance(body, dict):
+                    avg = body.get('totalAverage', {})
+                    if avg:
+                        if avg.get('bodyFat') is not None:
+                            fat = avg.get('bodyFat')
+                        if avg.get('weight') is not None:
+                            weight = round(avg.get('weight') / 1000, 2)
+                        if avg.get('muscleMass') is not None:
+                            muscle = round(avg.get('muscleMass') / 1000, 2)
+
+                # VO2 Max
+                vo2 = '-'
+                if metrics and isinstance(metrics, list) and len(metrics) > 0:
+                    generic = metrics[0].get('generic', {})
+                    if generic and generic.get('vo2MaxPreciseValue') is not None:
+                        vo2 = generic.get('vo2MaxPreciseValue')
+
+                # Fitness Age & Chronological Age
+                f_age = '-'
+                youth_bonus = '-'
+                vigorous_avg = '-'
+                if fage_data and isinstance(fage_data, dict):
+                    c_age_val = fage_data.get('chronologicalAge')
+                    f_age_val = fage_data.get('fitnessAge')
                     
-                    # Calculate Youth Bonus (Actual Age - Fitness Age)
-                    if c_age_val is not None:
-                        youth_bonus = round(c_age_val - f_age_val, 2)
+                    if f_age_val is not None:
+                        f_age = round(f_age_val, 2)
+                        
+                        # Calculate Youth Bonus (Actual Age - Fitness Age)
+                        if c_age_val is not None:
+                            youth_bonus = round(c_age_val - f_age_val, 2)
 
-                # Extract Vigorous Minutes Average
-                components = fage_data.get('components', {})
-                vig_mins = components.get('vigorousMinutesAvg', {}).get('value')
-                if vig_mins is not None:
-                    vigorous_avg = vig_mins
+                    # Extract Vigorous Minutes Average
+                    components = fage_data.get('components', {})
+                    vig_mins = components.get('vigorousMinutesAvg', {}).get('value')
+                    if vig_mins is not None:
+                        vigorous_avg = vig_mins
 
-            # Sleep Score
-            sleep_score = '-'
-            if sleep_data and isinstance(sleep_data, dict):
-                daily_sleep = sleep_data.get('dailySleepDTO', {})
-                if daily_sleep and isinstance(daily_sleep, dict):
-                    scores = daily_sleep.get('sleepScores', {})
-                    if scores and isinstance(scores, dict):
-                        overall = scores.get('overall', {})
-                        if overall and overall.get('value') is not None:
-                            sleep_score = overall.get('value')
+                # Sleep Score
+                sleep_score = '-'
+                if sleep_data and isinstance(sleep_data, dict):
+                    daily_sleep = sleep_data.get('dailySleepDTO', {})
+                    if daily_sleep and isinstance(daily_sleep, dict):
+                        scores = daily_sleep.get('sleepScores', {})
+                        if scores and isinstance(scores, dict):
+                            overall = scores.get('overall', {})
+                            if overall and overall.get('value') is not None:
+                                sleep_score = overall.get('value')
 
-            # All-Day Stress
-            # stress_data returns a list of dictionaries if present, or dict directly
-            avg_stress = '-'
-            steps = '-'
-            # We can also get average stress directly from the stats summary we already fetched
-            if stats and isinstance(stats, dict):
-                if stats.get('averageStressLevel') is not None:
-                    avg_stress = stats.get('averageStressLevel')
-                if stats.get('totalSteps') is not None:
-                    steps = stats.get('totalSteps')
+                # All-Day Stress
+                # stress_data returns a list of dictionaries if present, or dict directly
+                avg_stress = '-'
+                steps = '-'
+                # We can also get average stress directly from the stats summary we already fetched
+                if stats and isinstance(stats, dict):
+                    if stats.get('averageStressLevel') is not None:
+                        avg_stress = stats.get('averageStressLevel')
+                    if stats.get('totalSteps') is not None:
+                        steps = stats.get('totalSteps')
 
-            # Print the row
-            print(f"{date_str:<12} | {rhr:<16} | {steps:<6} | {weight:<8} | {fat:<8} | {muscle:<12} | {vo2:<8} | {f_age:<11} | {youth_bonus:<11} | {vigorous_avg:<18} | {sleep_score:<11} | {avg_stress:<13}")
-            daily_rows.append([date_str, rhr, steps, weight, fat, muscle, vo2, f_age, youth_bonus, vigorous_avg, sleep_score, avg_stress])
+                # Print the row
+                print(f"{date_str:<12} | {rhr:<16} | {steps:<6} | {weight:<8} | {fat:<8} | {muscle:<12} | {vo2:<8} | {f_age:<11} | {youth_bonus:<11} | {vigorous_avg:<18} | {sleep_score:<11} | {avg_stress:<13}")
+                daily_rows.append([date_str, rhr, steps, weight, fat, muscle, vo2, f_age, youth_bonus, vigorous_avg, sleep_score, avg_stress])
 
-        except Exception as e:
-            # This will only catch actual connection errors, not missing data
-            print(f"{date_str:<12} | CRITICAL ERROR: {e}")
+            except Exception as e:
+                # This will only catch actual connection errors, not missing data
+                print(f"{date_str:<12} | CRITICAL ERROR: {e}")
 
-    # Write daily CSV
-    if args.export_csv:
-        with open(daily_csv_path, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            writer.writerow(daily_headers)
-            writer.writerows(daily_rows)
-        print(f"\n✅ Exported daily stats to {daily_csv_path}")
+        # Write daily CSV
+        if args.export_csv:
+            with open(daily_csv_path, 'w', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                writer.writerow(daily_headers)
+                writer.writerows(daily_rows)
+            print(f"\n✅ Exported daily stats to {daily_csv_path}")
 
-    # Write daily BigQuery
-    if args.export_bq and daily_rows:
+        # Write daily BigQuery
+        if args.export_bq and daily_rows:
+            try:
+                client = bigquery.Client(project=BQ_PROJECT)
+                # Create a DataFrame from the rows, mapping to schema names
+                df_daily = pd.DataFrame(daily_rows, columns=[field.name for field in DAILY_SCHEMA])
+                
+                # Convert types to handle '-' gracefully
+                df_daily = df_daily.replace('-', pd.NA)
+                
+                # Convert 'Date' column to standard date objects
+                df_daily['Date'] = pd.to_datetime(df_daily['Date']).dt.date
+                
+                daily_table_id = f"{BQ_PROJECT}.{BQ_DATASET}.{BQ_DAILY_TABLE}"
+                
+                job_config = bigquery.LoadJobConfig(
+                    schema=DAILY_SCHEMA,
+                    write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE if args.export_bq == 'overwrite' else bigquery.WriteDisposition.WRITE_APPEND
+                )
+                
+                print(f"Uploading Daily Stats to BigQuery ({args.export_bq})...")
+                job = client.load_table_from_dataframe(df_daily, daily_table_id, job_config=job_config)
+                job.result()  # Wait for the job to complete.
+                
+                # Update table description
+                table = client.get_table(daily_table_id)
+                table.description = "Daily health and fitness statistics from Garmin Connect"
+                client.update_table(table, ["description"])
+                
+                print(f"✅ Exported daily stats to BigQuery table {daily_table_id}")
+            except Exception as e:
+                print(f"❌ Failed to export daily stats to BigQuery: {e}")
+
+    if args.skip != 'activities':
+        print("\n\n")
+        print("--- Recent Activities ---")
+        print(f"{'StartTime':<16} | {'ActivityName':<20} | {'ActivityType':<20} | {'DurationMin':<11} | {'Calories':<8} | {'AverageHR':<9} | {'MaxHR':<5} | {'ModerateIntensityMinutes':<24} | {'VigorousIntensityMinutes':<24} | {'Zone1':<8} | {'Zone2':<8} | {'Zone3':<8} | {'Zone4':<8} | {'Zone5':<8}")
+        print("-" * 193)
+
+        activity_headers = [field.name for field in ACTIVITY_SCHEMA]
+        activity_rows = []
+
+        start_date_str = date_list[-1].isoformat()
+        end_date_str = date_list[0].isoformat()
+
+        def format_duration(seconds):
+            if not seconds:
+                return '-'
+            s = int(seconds)
+            return f"{s // 3600:02d}:{(s % 3600) // 60:02d}:{s % 60:02d}"
+
         try:
-            client = bigquery.Client(project=BQ_PROJECT)
-            # Create a DataFrame from the rows, mapping to schema names
-            df_daily = pd.DataFrame(daily_rows, columns=[field.name for field in DAILY_SCHEMA])
-            
-            # Convert types to handle '-' gracefully
-            df_daily = df_daily.replace('-', pd.NA)
-            
-            # Convert 'Date' column to standard date objects
-            df_daily['Date'] = pd.to_datetime(df_daily['Date']).dt.date
-            
-            daily_table_id = f"{BQ_PROJECT}.{BQ_DATASET}.{BQ_DAILY_TABLE}"
-            
-            job_config = bigquery.LoadJobConfig(
-                schema=DAILY_SCHEMA,
-                write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE if args.export_bq == 'overwrite' else bigquery.WriteDisposition.WRITE_APPEND
-            )
-            
-            print(f"Uploading Daily Stats to BigQuery ({args.export_bq})...")
-            job = client.load_table_from_dataframe(df_daily, daily_table_id, job_config=job_config)
-            job.result()  # Wait for the job to complete.
-            
-            # Update table description
-            table = client.get_table(daily_table_id)
-            table.description = "Daily health and fitness statistics from Garmin Connect"
-            client.update_table(table, ["description"])
-            
-            print(f"✅ Exported daily stats to BigQuery table {daily_table_id}")
+            activities = api.get_activities_by_date(start_date_str, end_date_str)
+            # Garmin returns activities ordered by start time descending usually, but we can reverse just in case
+            for activity in reversed(activities):
+                start_time = activity.get('startTimeLocal', '')[:16]
+                name = activity.get('activityName', '')[:20]
+                activity_type = activity.get('activityType', '').get('typeKey', '')[:20]
+                
+                duration_s = activity.get('duration', 0)
+                duration_m = round(duration_s / 60, 1) if duration_s else '-'
+                
+                cal = round(activity.get('calories', 0)) if activity.get('calories') else '-'
+                avg_hr = activity.get('averageHR', '-')
+                max_hr = activity.get('maxHR', '-')
+                mod_min = activity.get('moderateIntensityMinutes', '-')
+                vig_min = activity.get('vigorousIntensityMinutes', '-')
+                
+                # Garmin provides HR zones in seconds
+                z1 = format_duration(activity.get('hrTimeInZone_1'))
+                z2 = format_duration(activity.get('hrTimeInZone_2'))
+                z3 = format_duration(activity.get('hrTimeInZone_3'))
+                z4 = format_duration(activity.get('hrTimeInZone_4'))
+                z5 = format_duration(activity.get('hrTimeInZone_5'))
+                
+                print(f"{start_time:<16} | {name:<20} | {activity_type:<20} | {duration_m:<11} | {cal:<8} | {avg_hr:<9} | {max_hr:<5} | {mod_min:<24} | {vig_min:<24} | {z1:<8} | {z2:<8} | {z3:<8} | {z4:<8} | {z5:<8}")
+                activity_rows.append([start_time, name, activity_type, duration_m, cal, avg_hr, max_hr, mod_min, vig_min, z1, z2, z3, z4, z5])
+
         except Exception as e:
-            print(f"❌ Failed to export daily stats to BigQuery: {e}")
+             print(f"Error fetching activities: {e}")
 
-    print("\n\n")
-    print("--- Recent Activities ---")
-    print(f"{'StartTime':<16} | {'ActivityName':<20} | {'DurationMin':<11} | {'Calories':<8} | {'AverageHR':<9} | {'MaxHR':<5} | {'ModerateIntensityMinutes':<24} | {'VigorousIntensityMinutes':<24} | {'Zone1':<8} | {'Zone2':<8} | {'Zone3':<8} | {'Zone4':<8} | {'Zone5':<8}")
-    print("-" * 193)
+        # Write activity CSV
+        if args.export_csv and activity_rows:
+            with open(activity_csv_path, 'w', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                writer.writerow(activity_headers)
+                writer.writerows(activity_rows)
+            print(f"✅ Exported activities to {activity_csv_path}")
 
-    activity_headers = [field.name for field in ACTIVITY_SCHEMA]
-    activity_rows = []
-
-    start_date_str = date_list[-1].isoformat()
-    end_date_str = date_list[0].isoformat()
-
-    def format_duration(seconds):
-        if not seconds:
-            return '-'
-        s = int(seconds)
-        return f"{s // 3600:02d}:{(s % 3600) // 60:02d}:{s % 60:02d}"
-
-    try:
-        activities = api.get_activities_by_date(start_date_str, end_date_str)
-        # Garmin returns activities ordered by start time descending usually, but we can reverse just in case
-        for activity in reversed(activities):
-            start_time = activity.get('startTimeLocal', '')[:16]
-            name = activity.get('activityName', '')[:20]
-            
-            duration_s = activity.get('duration', 0)
-            duration_m = round(duration_s / 60, 1) if duration_s else '-'
-            
-            cal = round(activity.get('calories', 0)) if activity.get('calories') else '-'
-            avg_hr = activity.get('averageHR', '-')
-            max_hr = activity.get('maxHR', '-')
-            mod_min = activity.get('moderateIntensityMinutes', '-')
-            vig_min = activity.get('vigorousIntensityMinutes', '-')
-            
-            # Garmin provides HR zones in seconds
-            z1 = format_duration(activity.get('hrTimeInZone_1'))
-            z2 = format_duration(activity.get('hrTimeInZone_2'))
-            z3 = format_duration(activity.get('hrTimeInZone_3'))
-            z4 = format_duration(activity.get('hrTimeInZone_4'))
-            z5 = format_duration(activity.get('hrTimeInZone_5'))
-            
-            print(f"{start_time:<16} | {name:<20} | {duration_m:<11} | {cal:<8} | {avg_hr:<9} | {max_hr:<5} | {mod_min:<24} | {vig_min:<24} | {z1:<8} | {z2:<8} | {z3:<8} | {z4:<8} | {z5:<8}")
-            activity_rows.append([start_time, name, duration_m, cal, avg_hr, max_hr, mod_min, vig_min, z1, z2, z3, z4, z5])
-
-    except Exception as e:
-         print(f"Error fetching activities: {e}")
-
-    # Write activity CSV
-    if args.export_csv and activity_rows:
-        with open(activity_csv_path, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            writer.writerow(activity_headers)
-            writer.writerows(activity_rows)
-        print(f"✅ Exported activities to {activity_csv_path}")
-
-    # Write activity BigQuery
-    if args.export_bq and activity_rows:
-        try:
-            client = bigquery.Client(project=BQ_PROJECT)
-            df_activity = pd.DataFrame(activity_rows, columns=[field.name for field in ACTIVITY_SCHEMA])
-            
-            # Convert types to handle '-' gracefully
-            df_activity = df_activity.replace('-', pd.NA)
-            
-            # Activities datetime parsing (Format '2026-03-08 15:59')
-            df_activity['StartTime'] = pd.to_datetime(df_activity['StartTime'])
-            
-            # Handle TIME duration formats (HH:MM:SS) for Zones
-            for col in ['Zone1', 'Zone2', 'Zone3', 'Zone4', 'Zone5']:
-                 df_activity[col] = pd.to_datetime(df_activity[col], format='%H:%M:%S', errors='coerce').dt.time
-            
-            activity_table_id = f"{BQ_PROJECT}.{BQ_DATASET}.{BQ_ACTIVITY_TABLE}"
-            
-            job_config = bigquery.LoadJobConfig(
-                schema=ACTIVITY_SCHEMA,
-                write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE if args.export_bq == 'overwrite' else bigquery.WriteDisposition.WRITE_APPEND
-            )
-            
-            print(f"Uploading Activities to BigQuery ({args.export_bq})...")
-            job = client.load_table_from_dataframe(df_activity, activity_table_id, job_config=job_config)
-            job.result()
-            
-            # Update table description
-            table = client.get_table(activity_table_id)
-            table.description = "Detailed activity records from Garmin Connect"
-            client.update_table(table, ["description"])
-            
-            print(f"✅ Exported activities to BigQuery table {activity_table_id}")
-        except Exception as e:
-            print(f"❌ Failed to export activities to BigQuery: {e}")
+        # Write activity BigQuery
+        if args.export_bq and activity_rows:
+            try:
+                client = bigquery.Client(project=BQ_PROJECT)
+                df_activity = pd.DataFrame(activity_rows, columns=[field.name for field in ACTIVITY_SCHEMA])
+                
+                # Convert types to handle '-' gracefully
+                df_activity = df_activity.replace('-', pd.NA)
+                
+                # Activities datetime parsing (Format '2026-03-08 15:59')
+                df_activity['StartTime'] = pd.to_datetime(df_activity['StartTime'])
+                
+                # Handle TIME duration formats (HH:MM:SS) for Zones
+                for col in ['Zone1', 'Zone2', 'Zone3', 'Zone4', 'Zone5']:
+                     df_activity[col] = pd.to_datetime(df_activity[col], format='%H:%M:%S', errors='coerce').dt.time
+                
+                activity_table_id = f"{BQ_PROJECT}.{BQ_DATASET}.{BQ_ACTIVITY_TABLE}"
+                
+                job_config = bigquery.LoadJobConfig(
+                    schema=ACTIVITY_SCHEMA,
+                    write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE if args.export_bq == 'overwrite' else bigquery.WriteDisposition.WRITE_APPEND
+                )
+                
+                print(f"Uploading Activities to BigQuery ({args.export_bq})...")
+                job = client.load_table_from_dataframe(df_activity, activity_table_id, job_config=job_config)
+                job.result()
+                
+                # Update table description
+                table = client.get_table(activity_table_id)
+                table.description = "Detailed activity records from Garmin Connect"
+                client.update_table(table, ["description"])
+                
+                print(f"✅ Exported activities to BigQuery table {activity_table_id}")
+            except Exception as e:
+                print(f"❌ Failed to export activities to BigQuery: {e}")
 
 if __name__ == "__main__":
     main()
