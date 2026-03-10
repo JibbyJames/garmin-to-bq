@@ -4,10 +4,50 @@ import sys
 import datetime
 import logging
 import os
-
+import pandas as pd
 from getpass import getpass
 from pathlib import Path
 from garminconnect import Garmin
+from google.cloud import bigquery
+from google.cloud.exceptions import NotFound
+
+# --- BigQuery Configuration ---
+BQ_PROJECT = "james-gcp-project"
+BQ_DATASET = "garmin"
+BQ_DAILY_TABLE = "daily_stats"
+BQ_ACTIVITY_TABLE = "activities"
+
+# Define Schemas (used for console grouping, CSV headers, and BQ schema)
+DAILY_SCHEMA = [
+    bigquery.SchemaField("Date", "DATE", description="The date of the stats"),
+    bigquery.SchemaField("RestingHeartRate", "INTEGER", description="Resting heart rate in beats per minute"),
+    bigquery.SchemaField("Steps", "INTEGER", description="Total number of steps taken in the day"),
+    bigquery.SchemaField("BodyFat", "FLOAT", description="Body fat percentage"),
+    bigquery.SchemaField("VO2Max", "FLOAT", description="VO2 max estimate"),
+    bigquery.SchemaField("FitnessAge", "FLOAT", description="Estimated fitness age"),
+    bigquery.SchemaField("YouthBonus", "FLOAT", description="Youth bonus derived from fitness age"),
+    bigquery.SchemaField("VigorousMinutesAvg", "FLOAT", description="Average vigorous intensity minutes from last six weeks"),
+    bigquery.SchemaField("SleepScore", "INTEGER", description="Garmin sleep score"),
+    bigquery.SchemaField("AverageStress", "INTEGER", description="Average daily stress level"),
+]
+
+ACTIVITY_SCHEMA = [
+    bigquery.SchemaField("StartTime", "DATETIME", description="Start time of the activity"),
+    bigquery.SchemaField("ActivityName", "STRING", description="Name/type of the activity"),
+    bigquery.SchemaField("DurationMin", "FLOAT", description="Duration of the activity in minutes"),
+    bigquery.SchemaField("Calories", "INTEGER", description="Calories burned during the activity"),
+    bigquery.SchemaField("AverageHR", "INTEGER", description="Average heart rate during the activity"),
+    bigquery.SchemaField("MaxHR", "INTEGER", description="Maximum heart rate during the activity"),
+    bigquery.SchemaField("ModerateIntensityMinutes", "INTEGER", description="Minutes of moderate intensity"),
+    bigquery.SchemaField("VigorousIntensityMinutes", "INTEGER", description="Minutes of vigorous intensity"),
+    bigquery.SchemaField("Zone1", "TIME", description="Time spent in Warm Up HR Zone (Z1)"),
+    bigquery.SchemaField("Zone2", "TIME", description="Time spent in Easy HR Zone (Z2)"),
+    bigquery.SchemaField("Zone3", "TIME", description="Time spent in Aerobic HR Zone (Z3)"),
+    bigquery.SchemaField("Zone4", "TIME", description="Time spent in Threshold HR Zone (Z4)"),
+    bigquery.SchemaField("Zone5", "TIME", description="Time spent in Maximum HR Zone (Z5)"),
+]
+
+
 
 
 
@@ -65,6 +105,7 @@ def main():
     parser.add_argument("--start-date", type=str, help="Start date in YYYY-MM-DD format.")
     parser.add_argument("--end-date", type=str, help="End date in YYYY-MM-DD format.")
     parser.add_argument("--export-csv", action="store_true", help="Export data to CSV files.")
+    parser.add_argument("--export-bq", choices=['overwrite', 'append'], help="Export data to BigQuery")
     args = parser.parse_args()
 
     api = init_api()
@@ -114,12 +155,13 @@ def main():
         daily_csv_path = export_dir / f"daily_stats_{timestamp}.csv"
         activity_csv_path = export_dir / f"activities_{timestamp}.csv"
     
-    daily_headers = ['Date', 'RHR', 'Steps', 'Body Fat', 'VO2 Max', 'Fitness Age', 'Youth Bonus', 'Vigorous Avg', 'Sleep Score', 'Avg Stress']
+    daily_headers = [field.name for field in DAILY_SCHEMA]
     daily_rows = []
     
     # Print Header
-    print(f"{'Date':<12} | {'RHR':<5} | {'Steps':<6} | {'Body Fat':<8} | {'VO2 Max':<8} | {'Fitness Age':<11} | {'Youth Bonus':<11} | {'Vigorous Avg':<12} | {'Sleep Score':<11} | {'Avg Stress'}")
-    print("-" * 135)
+    print("--- Daily Stats ---")
+    print(f"{'Date':<12} | {'RestingHeartRate':<16} | {'Steps':<6} | {'BodyFat':<8} | {'VO2Max':<8} | {'FitnessAge':<11} | {'YouthBonus':<11} | {'VigorousMinutesAvg':<18} | {'SleepScore':<11} | {'AverageStress':<13}")
+    print("-" * 141)
 
     for check_date in reversed(date_list):
         date_str = check_date.isoformat()
@@ -193,7 +235,7 @@ def main():
                     steps = stats.get('totalSteps')
 
             # Print the row
-            print(f"{date_str:<12} | {rhr:<5} | {steps:<6} | {fat:<8} | {vo2:<8} | {f_age:<11} | {youth_bonus:<11} | {vigorous_avg:<12} | {sleep_score:<11} | {avg_stress}")
+            print(f"{date_str:<12} | {rhr:<16} | {steps:<6} | {fat:<8} | {vo2:<8} | {f_age:<11} | {youth_bonus:<11} | {vigorous_avg:<18} | {sleep_score:<11} | {avg_stress:<13}")
             daily_rows.append([date_str, rhr, steps, fat, vo2, f_age, youth_bonus, vigorous_avg, sleep_score, avg_stress])
 
         except Exception as e:
@@ -208,12 +250,45 @@ def main():
             writer.writerows(daily_rows)
         print(f"\n✅ Exported daily stats to {daily_csv_path}")
 
-    print("\n\n")
-    print("👟 Recent Activities")
-    print(f"{'Datum/Time':<20} | {'Activity':<20} | {'Dur(m)':<6} | {'Cal':<5} | {'AvgHR':<5} | {'MaxHR':<5} | {'ModMin':<6} | {'VigMin':<6} | {'Z1':<8} | {'Z2':<8} | {'Z3':<8} | {'Z4':<8} | {'Z5':<8}")
-    print("-" * 145)
+    # Write daily BigQuery
+    if args.export_bq and daily_rows:
+        try:
+            client = bigquery.Client(project=BQ_PROJECT)
+            # Create a DataFrame from the rows, mapping to schema names
+            df_daily = pd.DataFrame(daily_rows, columns=[field.name for field in DAILY_SCHEMA])
+            
+            # Convert types to handle '-' gracefully
+            df_daily = df_daily.replace('-', pd.NA)
+            
+            # Convert 'Date' column to standard date objects
+            df_daily['Date'] = pd.to_datetime(df_daily['Date']).dt.date
+            
+            daily_table_id = f"{BQ_PROJECT}.{BQ_DATASET}.{BQ_DAILY_TABLE}"
+            
+            job_config = bigquery.LoadJobConfig(
+                schema=DAILY_SCHEMA,
+                write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE if args.export_bq == 'overwrite' else bigquery.WriteDisposition.WRITE_APPEND
+            )
+            
+            print(f"Uploading Daily Stats to BigQuery ({args.export_bq})...")
+            job = client.load_table_from_dataframe(df_daily, daily_table_id, job_config=job_config)
+            job.result()  # Wait for the job to complete.
+            
+            # Update table description
+            table = client.get_table(daily_table_id)
+            table.description = "Daily health and fitness statistics from Garmin Connect"
+            client.update_table(table, ["description"])
+            
+            print(f"✅ Exported daily stats to BigQuery table {daily_table_id}")
+        except Exception as e:
+            print(f"❌ Failed to export daily stats to BigQuery: {e}")
 
-    activity_headers = ['Datum/Time', 'Activity', 'Dur(m)', 'Cal', 'AvgHR', 'MaxHR', 'ModMin', 'VigMin', 'Z1', 'Z2', 'Z3', 'Z4', 'Z5']
+    print("\n\n")
+    print("--- Recent Activities ---")
+    print(f"{'StartTime':<16} | {'ActivityName':<20} | {'DurationMin':<11} | {'Calories':<8} | {'AverageHR':<9} | {'MaxHR':<5} | {'ModerateIntensityMinutes':<24} | {'VigorousIntensityMinutes':<24} | {'Zone1':<8} | {'Zone2':<8} | {'Zone3':<8} | {'Zone4':<8} | {'Zone5':<8}")
+    print("-" * 193)
+
+    activity_headers = [field.name for field in ACTIVITY_SCHEMA]
     activity_rows = []
 
     start_date_str = date_list[-1].isoformat()
@@ -248,7 +323,7 @@ def main():
             z4 = format_duration(activity.get('hrTimeInZone_4'))
             z5 = format_duration(activity.get('hrTimeInZone_5'))
             
-            print(f"{start_time:<20} | {name:<20} | {duration_m:<6} | {cal:<5} | {avg_hr:<5} | {max_hr:<5} | {mod_min:<6} | {vig_min:<6} | {z1:<8} | {z2:<8} | {z3:<8} | {z4:<8} | {z5:<8}")
+            print(f"{start_time:<16} | {name:<20} | {duration_m:<11} | {cal:<8} | {avg_hr:<9} | {max_hr:<5} | {mod_min:<24} | {vig_min:<24} | {z1:<8} | {z2:<8} | {z3:<8} | {z4:<8} | {z5:<8}")
             activity_rows.append([start_time, name, duration_m, cal, avg_hr, max_hr, mod_min, vig_min, z1, z2, z3, z4, z5])
 
     except Exception as e:
@@ -261,6 +336,42 @@ def main():
             writer.writerow(activity_headers)
             writer.writerows(activity_rows)
         print(f"✅ Exported activities to {activity_csv_path}")
+
+    # Write activity BigQuery
+    if args.export_bq and activity_rows:
+        try:
+            client = bigquery.Client(project=BQ_PROJECT)
+            df_activity = pd.DataFrame(activity_rows, columns=[field.name for field in ACTIVITY_SCHEMA])
+            
+            # Convert types to handle '-' gracefully
+            df_activity = df_activity.replace('-', pd.NA)
+            
+            # Activities datetime parsing (Format '2026-03-08 15:59')
+            df_activity['StartTime'] = pd.to_datetime(df_activity['StartTime'])
+            
+            # Handle TIME duration formats (HH:MM:SS) for Zones
+            for col in ['Zone1', 'Zone2', 'Zone3', 'Zone4', 'Zone5']:
+                 df_activity[col] = pd.to_datetime(df_activity[col], format='%H:%M:%S', errors='coerce').dt.time
+            
+            activity_table_id = f"{BQ_PROJECT}.{BQ_DATASET}.{BQ_ACTIVITY_TABLE}"
+            
+            job_config = bigquery.LoadJobConfig(
+                schema=ACTIVITY_SCHEMA,
+                write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE if args.export_bq == 'overwrite' else bigquery.WriteDisposition.WRITE_APPEND
+            )
+            
+            print(f"Uploading Activities to BigQuery ({args.export_bq})...")
+            job = client.load_table_from_dataframe(df_activity, activity_table_id, job_config=job_config)
+            job.result()
+            
+            # Update table description
+            table = client.get_table(activity_table_id)
+            table.description = "Detailed activity records from Garmin Connect"
+            client.update_table(table, ["description"])
+            
+            print(f"✅ Exported activities to BigQuery table {activity_table_id}")
+        except Exception as e:
+            print(f"❌ Failed to export activities to BigQuery: {e}")
 
 if __name__ == "__main__":
     main()
