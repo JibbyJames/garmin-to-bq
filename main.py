@@ -7,6 +7,7 @@ import os
 import json
 import pandas as pd
 import pandas_gbq
+import requests
 from getpass import getpass
 from pathlib import Path
 from garminconnect import Garmin
@@ -22,6 +23,7 @@ BQ_ACTIVITY_TABLE = "activities"
 
 # Check if running as a cloud function
 IS_CLOUD_FUNCTION = os.environ.get('K_SERVICE') is not None or os.environ.get('FUNCTION_TARGET') is not None
+LOCAL_LOGGING = os.environ.get('FUNCTION_LOCAL_LOGGING') is not None and os.environ.get('FUNCTION_LOCAL_LOGGING') == 'true'
 
 # Define Schemas (used for console grouping, CSV headers, and BQ schema)
 DAILY_SCHEMA = [
@@ -60,7 +62,7 @@ ACTIVITY_SCHEMA = [
 
 
 
-if IS_CLOUD_FUNCTION:
+if IS_CLOUD_FUNCTION and not LOCAL_LOGGING:
     import google.cloud.logging
     client = google.cloud.logging.Client()
     client.setup_logging()
@@ -91,40 +93,54 @@ def update_secret(secret_id, payload, project_id=BQ_PROJECT):
     except Exception as e:
         logger.error(f"Failed to update secret {secret_id}: {e}")
 
-def save_tokens_to_secret(secret_id, tokenstore_path):
-    if tokenstore_path.exists():
-        tokens = {}
-        for filepath in tokenstore_path.iterdir():
-            if filepath.is_file():
-                tokens[filepath.name] = filepath.read_text()
-        if tokens:
-            update_secret(secret_id, json.dumps(tokens))
-
-def load_tokens_from_secret(secret_id, tokenstore_path):
-    tokens_json = get_secret(secret_id)
-    if tokens_json:
+def init_api():
+    """Initialize Garmin API with verbose feedback."""
+    
+    tokenstore_path = Path("/tmp/.garminconnect" if IS_CLOUD_FUNCTION else "~/.garminconnect").expanduser()
+    
+    # Read GCP secret
+    gcp_tokens_json = get_secret("garmin-tokens")
+    
+    # Use local if present, else load from GCP
+    if not tokenstore_path.exists() and gcp_tokens_json:
         tokenstore_path.mkdir(parents=True, exist_ok=True)
         try:
-            tokens = json.loads(tokens_json)
+            tokens = json.loads(gcp_tokens_json)
             for filename, content in tokens.items():
                 (tokenstore_path / filename).write_text(content)
         except json.JSONDecodeError:
             logger.error("Failed to decode token JSON from secret manager")
-
-def init_api():
-    """Initialize Garmin API with verbose feedback."""
-    
-    
-    tokenstore_path = Path("/tmp/.garminconnect" if IS_CLOUD_FUNCTION else "~/.garminconnect").expanduser()
-    load_tokens_from_secret("garmin-tokens", tokenstore_path)
 
     # Try token-based login first
     if tokenstore_path.exists():
         logger.info(f"Checking for tokens in {tokenstore_path}...")
         try:
             garmin = Garmin()
+            garmin.garth.sess.headers.update({"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36"})
             garmin.login(str(tokenstore_path))
-            logger.info("✅ Login successful using stored tokens.")
+            logger.info("Login successful using stored tokens.")
+            
+            # Dump to local in case tokens were refreshed during login
+            garmin.garth.dump(str(tokenstore_path))
+            
+            # Compare current tokens with GCP secret and update if needed
+            current_tokens = {}
+            for filepath in tokenstore_path.iterdir():
+                if filepath.is_file():
+                    current_tokens[filepath.name] = filepath.read_text()
+            
+            needs_update = True
+            if gcp_tokens_json:
+                try:
+                    if json.loads(gcp_tokens_json) == current_tokens:
+                        needs_update = False
+                except json.JSONDecodeError:
+                    pass
+            
+            if needs_update:
+                logger.info("Tokens differ from GCP secret (likely refreshed). Updating secret...")
+                update_secret("garmin-tokens", json.dumps(current_tokens))
+                
             return garmin
         except Exception as e:
             logger.warning(f"⚠️ Token login failed: {e}. Falling back to credentials.")
@@ -142,7 +158,7 @@ def init_api():
     
     # If no email or password is provided, return None
     if not email or not password:
-         logger.error("❌ Missing email or password.")
+         logger.error("Missing email or password.")
          return None
 
     # Try credential-based login
@@ -150,12 +166,13 @@ def init_api():
         logger.info(f"Attempting manual login for: {email}")
         # Note: 'is_cn=False' is for non-China accounts
         garmin = Garmin(email, password, is_cn=False, return_on_mfa=True)
+        garmin.garth.sess.headers.update({"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"})
         result = garmin.login()
 
         # Handle MFA
         if result[0] == "needs_mfa":
             if IS_CLOUD_FUNCTION:
-                 logger.error("❌ MFA required but running as Cloud Function.")
+                 logger.error("MFA required but running as Cloud Function.")
                  return None
             logger.info("🔐 MFA Required! Check your email/SMS.")
             mfa_code = input("Enter MFA Code: ")
@@ -163,13 +180,30 @@ def init_api():
         
         # Save tokens for next time
         garmin.garth.dump(str(tokenstore_path))
-        logger.info(f"✅ Login successful. Tokens saved to {tokenstore_path}")
-        if IS_CLOUD_FUNCTION:
-            save_tokens_to_secret("garmin-tokens", tokenstore_path)
+        logger.info(f"Login successful. Tokens saved to {tokenstore_path}")
+        
+        # Compare current tokens with GCP secret and update if needed
+        current_tokens = {}
+        for filepath in tokenstore_path.iterdir():
+            if filepath.is_file():
+                current_tokens[filepath.name] = filepath.read_text()
+        
+        needs_update = True
+        if gcp_tokens_json:
+            try:
+                if json.loads(gcp_tokens_json) == current_tokens:
+                    needs_update = False
+            except json.JSONDecodeError:
+                pass
+                
+        if needs_update:
+            logger.info("Updating GCP secret with new tokens...")
+            update_secret("garmin-tokens", json.dumps(current_tokens))
+            
         return garmin
 
     except Exception as e:
-        logger.error(f"❌ LOGIN FAILED: {e}")
+        logger.error(f"LOGIN FAILED: {e}")
         return None
 
 def main(cmd_args=None):
@@ -339,7 +373,7 @@ def main(cmd_args=None):
                 writer = csv.writer(f)
                 writer.writerow(daily_headers)
                 writer.writerows(daily_rows)
-            logger.info(f"✅ Exported daily stats to {daily_csv_path}")
+            logger.info(f"Exported daily stats to {daily_csv_path}")
 
         # Write daily BigQuery
         if args.export_bq and daily_rows:
@@ -382,9 +416,9 @@ def main(cmd_args=None):
                 table.description = "Daily health and fitness statistics from Garmin Connect"
                 client.update_table(table, ["description"])
                 
-                logger.info(f"✅ Exported daily stats to BigQuery table {daily_table_id}")
+                logger.info(f"Exported daily stats to BigQuery table {daily_table_id}")
             except Exception as e:
-                logger.error(f"❌ Failed to export daily stats to BigQuery: {e}")
+                logger.error(f"Failed to export daily stats to BigQuery: {e}")
 
     if args.skip != 'activities':
         start_date_str = date_list[-1].isoformat()
@@ -448,7 +482,7 @@ def main(cmd_args=None):
                 writer = csv.writer(f)
                 writer.writerow(activity_headers)
                 writer.writerows(activity_rows)
-            logger.info(f"✅ Exported activities to {activity_csv_path}")
+            logger.info(f"Exported activities to {activity_csv_path}")
 
         # Write activity BigQuery
         if args.export_bq and activity_rows:
@@ -494,12 +528,16 @@ def main(cmd_args=None):
                 table.description = "Detailed activity records from Garmin Connect"
                 client.update_table(table, ["description"])
                 
-                logger.info(f"✅ Exported activities to BigQuery table {activity_table_id}")
+                logger.info(f"Exported activities to BigQuery table {activity_table_id}")
             except Exception as e:
-                logger.error(f"❌ Failed to export activities to BigQuery: {e}")
+                logger.error(f"Failed to export activities to BigQuery: {e}")
 
 def cloud_function_entry(request):
     """Entry point for GCP Cloud Function."""
+
+    outbound_ip = requests.get('https://ifconfig.me').text
+    logger.info(f"Function using the following IP: {outbound_ip}")
+
     today = datetime.date.today()
     yesterday = today - datetime.timedelta(days=1)
     

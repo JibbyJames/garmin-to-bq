@@ -42,7 +42,7 @@ You can run the script via the command line to specify custom date ranges and ex
 **Examples:**
 ```bash
 # Fetch data from March 1st to March 5th and print to console
-python main.py --start-date 2026-03-01 --end-date 2026-03-05
+python main.py --start-date 2026-02-01 --end-date 2026-03-25
 
 # Fetch data from March 5th up to today and export it to CSV
 python main.py --start-date 2026-03-05 --export-csv
@@ -70,6 +70,9 @@ You can deploy the Cloud Function, Service Account, and Cloud Scheduler Job usin
 export PROJECT_ID="james-gcp-project"
 gcloud config set project $PROJECT_ID
 
+# Get the Project Number (required for the Google-managed service agents)
+PROJECT_NUMBER=$(gcloud projects describe ${PROJECT_ID} --format="value(projectNumber)")
+
 # 1. Create a dedicated Service Account for Garmin Sync
 gcloud iam service-accounts create garmin \
   --display-name="Garmin Sync Service Account"
@@ -92,6 +95,12 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member="serviceAccount:garmin@${PROJECT_ID}.iam.gserviceaccount.com" \
   --role="roles/bigquery.jobUser"
 
+# This grants the Google-managed Scheduler service agent permission to create OIDC tokens
+gcloud iam service-accounts add-iam-policy-binding \
+  "garmin@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --member="serviceAccount:service-${PROJECT_NUMBER}@gcp-sa-cloudscheduler.iam.gserviceaccount.com" \
+  --role="roles/iam.serviceAccountTokenCreator"
+
 # 4. Deploy the 2nd Gen Cloud Function
 gcloud functions deploy garmin-to-bq \
   --gen2 \
@@ -105,24 +114,24 @@ gcloud functions deploy garmin-to-bq \
   --timeout=540s \
   --memory=1024MB
 
-# 5. Allow the Service Account to invoke the function (Cloud Run Invoker for Gen 2)
-gcloud run services add-iam-policy-binding garmin-to-bq \
+# 5. Grant Invoker permission (Unified Function-level binding)
+gcloud functions add-invoker-policy-binding garmin-to-bq \
   --region=europe-west1 \
-  --member="serviceAccount:garmin@${PROJECT_ID}.iam.gserviceaccount.com" \
-  --role="roles/run.invoker"
+  --member="serviceAccount:garmin@${PROJECT_ID}.iam.gserviceaccount.com"
 
-# 6. Create the Cloud Scheduler Job to trigger the function every 2 hours
-# Retrieve the deployed function URL
+# 6. Create (or Update) the Cloud Scheduler Job
 FUNCTION_URL=$(gcloud functions describe garmin-to-bq --gen2 --region=europe-west1 --format="value(serviceConfig.uri)")
 
-# Create the scheduler job
-gcloud scheduler jobs create http garmin-to-bq \
-  --schedule="0 8,10,12,14,16,18,20,22 * * *" \
+# Use 'update' if job exists, or 'create' for first time. 
+# "0 6 * * *" is once daily at 6AM.
+gcloud scheduler jobs update http garmin-to-bq \
+  --location=europe-west1 \
+  --schedule="0 6 * * *" \
+  --time-zone="Europe/London" \
   --uri=$FUNCTION_URL \
   --http-method=POST \
   --oidc-service-account-email="garmin@${PROJECT_ID}.iam.gserviceaccount.com" \
-  --oidc-token-audience=$FUNCTION_URL \
-  --location=europe-west1
+  --oidc-token-audience=$FUNCTION_URL
 ```
 
 ## Inspiration & References

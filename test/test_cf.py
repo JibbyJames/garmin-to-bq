@@ -8,6 +8,7 @@ from unittest.mock import MagicMock
 # Mock environment variables for Cloud Function
 os.environ['K_SERVICE'] = 'garmin-to-bq'
 os.environ['FUNCTION_TARGET'] = 'cloud_function_entry'
+os.environ['FUNCTION_LOCAL_LOGGING'] = 'true'
 
 # Import the function to test from the parent directory
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))

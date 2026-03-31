@@ -6,3 +6,4 @@ pyarrow
 db-dtypes
 pandas-gbq
 google-cloud-logging
+requests
