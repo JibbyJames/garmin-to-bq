@@ -7,6 +7,7 @@ import datetime
 import threading
 import logging
 from collections import deque
+from concurrent.futures import ThreadPoolExecutor
 from flask import Flask, redirect, url_for, session, render_template, request, jsonify
 from authlib.integrations.flask_client import OAuth
 from google.cloud import bigquery
@@ -99,7 +100,7 @@ def require_oauth():
 @app.route('/login')
 def login():
     if 'user' in session:
-        return redirect(url_for('kpis'))
+        return redirect(url_for('dashboard'))
     redirect_uri = url_for('authorize', _external=True)
     if 'X-Forwarded-Proto' in request.headers:
         redirect_uri = redirect_uri.replace('http://', 'https://')
@@ -111,7 +112,7 @@ def authorize():
     # With OpenID Connect, userinfo is parsed directly from the ID token
     user_info = token.get('userinfo')
     session['user'] = user_info
-    return redirect(url_for('kpis'))
+    return redirect(url_for('dashboard'))
 
 @app.route('/logout')
 def logout():
@@ -122,24 +123,26 @@ def logout():
 def index():
     if 'user' not in session:
          return render_template('login.html')
-    return redirect(url_for('kpis'))
+    return redirect(url_for('dashboard'))
 
 def fetch_bq_data(query):
     client = bigquery.Client()
     job = client.query(query)
     return [dict(row) for row in job.result()]
 
-@app.route('/kpis')
-def kpis():
-    query = "SELECT * FROM `james-gcp-project.garmin.health_kpis`"
-    data = fetch_bq_data(query)
-    return render_template('kpis.html', data=data)
+@app.route('/dashboard')
+def dashboard():
+    query_kpis = "SELECT * FROM `james-gcp-project.garmin.health_kpis`"
+    query_week = "SELECT * FROM `james-gcp-project.garmin.week_progress` ORDER BY goal_name"
+    
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        future_kpis = executor.submit(fetch_bq_data, query_kpis)
+        future_week = executor.submit(fetch_bq_data, query_week)
+        
+        kpis_data = future_kpis.result()
+        week_data = future_week.result()
 
-@app.route('/week-progress')
-def week_progress():
-    query = "SELECT * FROM `james-gcp-project.garmin.week_progress` ORDER BY goal_name"
-    data = fetch_bq_data(query)
-    return render_template('week_progress.html', data=data)
+    return render_template('dashboard.html', kpis_data=kpis_data, week_data=week_data)
 
 @app.route('/sync', methods=['POST'])
 def run_sync():

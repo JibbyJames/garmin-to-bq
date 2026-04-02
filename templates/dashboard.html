@@ -1,0 +1,112 @@
+{% extends 'layout.html' %}
+{% block content %}
+
+{% macro check_bad(val, metric) %}
+    {% if val and val | float != 0 %}
+        {% set is_lower_better = 'Stress' in metric or 'Fat' in metric or 'Age' in metric or 'Weight' in metric or 'Rate' in metric %}
+        {% set is_negative = (val | float) < 0 %}
+        {% set is_better = is_negative if is_lower_better else not is_negative %}
+        {{ 'bad' if not is_better else 'good' }}
+    {% endif %}
+{% endmacro %}
+
+<!-- KPIS VIEW -->
+<div id="kpis-view" class="spa-view" style="display: block;">
+    <div class="kpi-controls">
+        <button id="cycleBtn" class="gb-btn cycle-btn">VIEWING: <span id="currentView">AVERAGE</span></button>
+    </div>
+    <div class="grid-2x3">
+        {% for item in kpis_data %}
+        {% set avg_status = check_bad(item.pct_diff_avg, item.metric) | trim %}
+        <div class="kpi-card {{ 'kpi-bad' if avg_status == 'bad' else '' }}" data-metric="{{ item.metric }}">
+            <div class="kpi-header">{{ item.metric }}</div>
+            
+            <div class="kpi-value view-latest">
+                <div class="val">{{ item.current_latest }}</div>
+                <div class="kpi-date">{{ item.current_latest_date if item.current_latest_date else '' }}</div>
+            </div>
+
+            <div class="kpi-value view-avg active" data-status="{{ avg_status }}">
+                <div class="val">{{ item.current_avg }}</div>
+                <div class="diff {% if item.pct_diff_avg and item.pct_diff_avg | float > 0 %}up{% elif item.pct_diff_avg and item.pct_diff_avg | float < 0 %}down{% endif %}">
+                    {% if item.pct_diff_avg and item.pct_diff_avg | float > 0 %}▲{% elif item.pct_diff_avg and item.pct_diff_avg | float < 0 %}▼{% else %}-{% endif %} {{ item.pct_diff_avg if item.pct_diff_avg else '0' }}%
+                </div>
+            </div>
+
+            <div class="kpi-value view-min" data-status="{{ check_bad(item.pct_diff_min, item.metric) | trim }}">
+                <div class="val">{{ item.current_min }}</div>
+                <div class="diff {% if item.pct_diff_min and item.pct_diff_min | float > 0 %}up{% elif item.pct_diff_min and item.pct_diff_min | float < 0 %}down{% endif %}">
+                    {% if item.pct_diff_min and item.pct_diff_min | float > 0 %}▲{% elif item.pct_diff_min and item.pct_diff_min | float < 0 %}▼{% else %}-{% endif %} {{ item.pct_diff_min if item.pct_diff_min else '0' }}%
+                </div>
+            </div>
+
+            <div class="kpi-value view-max" data-status="{{ check_bad(item.pct_diff_max, item.metric) | trim }}">
+                <div class="val">{{ item.current_max }}</div>
+                <div class="diff {% if item.pct_diff_max and item.pct_diff_max | float > 0 %}up{% elif item.pct_diff_max and item.pct_diff_max | float < 0 %}down{% endif %}">
+                    {% if item.pct_diff_max and item.pct_diff_max | float > 0 %}▲{% elif item.pct_diff_max and item.pct_diff_max | float < 0 %}▼{% else %}-{% endif %} {{ item.pct_diff_max if item.pct_diff_max else '0' }}%
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- WEEK PROGRESS VIEW -->
+<div id="week-view" class="spa-view" style="display: none;">
+    <h2 class="page-title">WEEK PROGRESS</h2>
+    <div class="list-1x4">
+        {% for item in week_data %}
+        <div class="progress-card">
+            <div class="progress-header">
+                <span>{{ item.goal_name }}:</span>
+                {% set unit = 'minutes' if item.goal_name in ['Cardio', 'Sauna'] or 'Minutes' in item.goal_name else 'sessions' %}
+                <span>{{ item.progress | round | int }} / {{ item.target | round | int }} {{ unit }}</span>
+            </div>
+            <div class="progress-bar-container">
+                {% set pct = (item.percentage | float) * 100 %}
+                <div class="progress-bar {% if pct >= 100 %}complete{% endif %}" style="width: {{ pct if pct <= 100 else 100 }}%"></div>
+                {% if pct > 100 %}
+                    <div class="progress-bar over-complete" style="width: {{ pct - 100 if pct - 100 <= 100 else 100 }}%"></div>
+                {% endif %}
+            </div>
+            <div class="progress-footer">
+                {% if item.last_recorded %}Last: {{ item.last_recorded }}{% else %}No records yet{% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    // SPA Tab Switching Logic
+    function switchTab(viewId, navId) {
+        // Hide all views
+        document.querySelectorAll('.spa-view').forEach(el => el.style.display = 'none');
+        // Show target view
+        document.getElementById(viewId).style.display = 'block';
+        
+        // Update nav active states
+        document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+        document.getElementById(navId).classList.add('active');
+    }
+
+    // KPI Cycle Logic
+    const views = ['avg', 'latest', 'min', 'max'];
+    let currentViewIdx = 0;
+    
+    document.getElementById('cycleBtn').addEventListener('click', () => {
+        document.querySelectorAll('.view-' + views[currentViewIdx]).forEach(el => el.classList.remove('active'));
+        currentViewIdx = (currentViewIdx + 1) % views.length;
+        document.querySelectorAll('.view-' + views[currentViewIdx]).forEach(el => {
+            el.classList.add('active');
+            let card = el.closest('.kpi-card');
+            if(el.dataset.status === 'bad') {
+                card.classList.add('kpi-bad');
+            } else {
+                card.classList.remove('kpi-bad');
+            }
+        });
+        document.getElementById('currentView').innerText = views[currentViewIdx].toUpperCase();
+    });
+</script>
+{% endblock %}

@@ -19,8 +19,8 @@
         {% if session.get('user') %}
         <nav class="gb-nav">
             <div class="nav-links">
-                <a href="{{ url_for('kpis') }}" class="{% if request.endpoint == 'kpis' %}active{% endif %}">KPIs</a>
-                <a href="{{ url_for('week_progress') }}" class="{% if request.endpoint == 'week_progress' %}active{% endif %}">WEEK</a>
+                <a href="#kpis" class="active nav-tab" id="nav-kpis" onclick="switchTab('kpis-view', 'nav-kpis')">KPIs</a>
+                <a href="#week" class="nav-tab" id="nav-week" onclick="switchTab('week-view', 'nav-week')">WEEK</a>
             </div>
             <div class="nav-actions">
                 <button id="syncBtn" class="gb-btn icon-btn" title="Sync Data">
