@@ -1,7 +1,7 @@
 {
   "name": "Garmin OS",
   "short_name": "Garmin",
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#9bbc0f",
   "theme_color": "#0f380f",

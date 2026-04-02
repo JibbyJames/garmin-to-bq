@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
     <rect width="512" height="512" fill="#9bbc0f"/>
     <!-- Gameboy pixel heart approximation or sleek logo -->
-    <path d="M256 120 C180 50 50 150 150 280 L256 400 L362 280 C462 150 332 50 256 120" fill="#0f380f"/>
+    <path transform="translate(256, 256) scale(0.65) translate(-256, -256)" d="M256 120 C180 50 50 150 150 280 L256 400 L362 280 C462 150 332 50 256 120" fill="#0f380f"/>
 </svg>
