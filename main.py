@@ -5,9 +5,13 @@ import datetime
 import logging
 import os
 import json
+import time
+import random
+import garth
 import pandas as pd
 import pandas_gbq
 import requests
+
 from getpass import getpass
 from pathlib import Path
 from garminconnect import Garmin
@@ -96,6 +100,13 @@ def update_secret(secret_id, payload, project_id=BQ_PROJECT):
 def init_api():
     """Initialize Garmin API with verbose feedback."""
     
+    # Removed random sleep for cloud run sync
+
+    garth.configure(domain="garmin.com")
+    garth.client.sess.headers.update({
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+    })
+    
     tokenstore_path = Path("/tmp/.garminconnect" if IS_CLOUD_FUNCTION else "~/.garminconnect").expanduser()
     
     # Read GCP secret
@@ -116,9 +127,17 @@ def init_api():
         logger.info(f"Checking for tokens in {tokenstore_path}...")
         try:
             garmin = Garmin()
-            garmin.garth.sess.headers.update({"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36"})
-            garmin.login(str(tokenstore_path))
-            logger.info("Login successful using stored tokens.")
+            garmin.garth.load(str(tokenstore_path))
+            
+            if garmin.garth.username:
+                logger.info("Session loaded. Testing connection...")
+                # Set required profile properties for garminconnect to build URLs correctly
+                garmin.display_name = garmin.garth.profile.get("displayName")
+                garmin.full_name = garmin.garth.profile.get("fullName")
+                logger.info("Login successful using stored tokens.")
+            else:
+                garmin.login(str(tokenstore_path))
+                logger.info("Login successful using stored tokens.")
             
             # Dump to local in case tokens were refreshed during login
             garmin.garth.dump(str(tokenstore_path))
@@ -219,7 +238,7 @@ def main(cmd_args=None):
     api = init_api()
     if not api:
         logger.error("Login failed.")
-        sys.exit(1)
+        raise RuntimeError("Login failed.")
 
     # Setup date range and timestamp
     today = datetime.date.today()
@@ -229,27 +248,27 @@ def main(cmd_args=None):
             start_date = datetime.datetime.strptime(args.start_date, "%Y-%m-%d").date()
         except ValueError:
             logger.error("Error: --start-date must be in YYYY-MM-DD format.")
-            sys.exit(1)
+            raise ValueError("Invalid start-date format")
             
         if args.end_date:
             try:
                 end_date = datetime.datetime.strptime(args.end_date, "%Y-%m-%d").date()
             except ValueError:
                 logger.error("Error: --end-date must be in YYYY-MM-DD format.")
-                sys.exit(1)
+                raise ValueError("Invalid end-date format")
         else:
             end_date = today
             
     elif args.end_date:
         logger.error("Error: Cannot provide --end-date without --start-date.")
-        sys.exit(1)
+        raise ValueError("Cannot provide --end-date without --start-date")
     else:
         end_date = today
         start_date = end_date - datetime.timedelta(days=14)
 
     if start_date > end_date:
         logger.error("Error: --start-date must be before or equal to --end-date.")
-        sys.exit(1)
+        raise ValueError("--start-date must be before or equal to --end-date")
 
     delta = end_date - start_date
     date_list = [end_date - datetime.timedelta(days=x) for x in range(delta.days + 1)]
@@ -531,26 +550,6 @@ def main(cmd_args=None):
                 logger.info(f"Exported activities to BigQuery table {activity_table_id}")
             except Exception as e:
                 logger.error(f"Failed to export activities to BigQuery: {e}")
-
-def cloud_function_entry(request):
-    """Entry point for GCP Cloud Function."""
-
-    outbound_ip = requests.get('https://ifconfig.me').text
-    logger.info(f"Function using the following IP: {outbound_ip}")
-
-    today = datetime.date.today()
-    yesterday = today - datetime.timedelta(days=1)
-    
-    cmd_args = [
-        "--start-date", yesterday.isoformat(),
-        "--end-date", today.isoformat(),
-        "--export-bq", "append",
-        "--quiet"
-    ]
-    
-    logger.info(f"Running Cloud Function with args: {cmd_args}")
-    main(cmd_args)
-    return "OK", 200
 
 if __name__ == "__main__":
     main()

@@ -51,27 +51,38 @@ python main.py --start-date 2026-03-05 --export-csv
 python main.py --start-date 2026-03-01 --export-bq overwrite
 ```
 
-## Running as a GCP Cloud Function
+## Running as a Cloud Run Web Application
 
-This script is also configured to run automatically as a Google Cloud Function. When the script detects it is running in a Cloud Function environment (via the `K_SERVICE` or `FUNCTION_TARGET` environment variables), it bypasses all interactive shell prompts and automatically:
+This project has been refactored to run as a full Flask web application hosted on Google Cloud Run. It features a retro GameBoy UI, mobile PWA capabilities, restricted access via Google OAuth, and manual execution triggers directly from the UI.
 
-1. Retrieves your Garmin credentials from Google Secret Manager (`garmin-email` and `garmin-password`).
-2. Retrieves and subsequently saves authentication session tokens to Secret Manager (`garmin-tokens`) to prevent needing a full login and MFA on every execution.
-3. Automatically runs yesterday's and today's dates, writing in BigQuery `--append` mode via the `cloud_function_entry` entry point.
+### 1. Configure Google OAuth credentials
 
-Make sure the GCP Service Account executing the function has **Secret Manager Secret Accessor** (to read credentials) and **Secret Manager Secret Version Adder** (to save new tokens) roles.
+Before deploying, you must create OAuth credentials for the application to authenticate users:
 
-### Deployment Guide
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
+2. Navigate to **APIs & Services** > **Credentials**.
+3. Click **Create Credentials** > **OAuth client ID**.
+4. Set Application Type to **Web application**.
+5. Add an Authorized Redirect URI. E.g. `https://your-cloud-run-url.a.run.app/authorize`.
+6. Copy the **Client ID** and **Client Secret**. Provide these as environment variables during deployment (or save them into Google Secret Manager natively).
 
-You can deploy the Cloud Function, Service Account, and Cloud Scheduler Job using the `gcloud` CLI. Ensure you are in the project root containing `main.py` and `requirements.txt`.
+### 2. Testing Locally
+
+To test the application locally:
+1. Make sure you have created the `-dev` suffixed secrets in Secret Manager (`garmin-google-oauth-client-id-dev` and `garmin-google-oauth-client-secret-dev`).
+2. Add `http://127.0.0.1:5000/authorize` to your Google OAuth Authorized Redirect URIs.
+3. Authenticate your local terminal with GCP via `gcloud auth application-default login`.
+4. Allow local HTTP OAuth testing by exporting the insecure transport flag: `export OAUTHLIB_INSECURE_TRANSPORT="1"`.
+5. Run the server using `flask run --host=127.0.0.1 --port=5000`.
+
+### 3. Deployment Guide
+
+You can deploy the Cloud Run Web App and the associated Service Account using the `gcloud` CLI. Ensure you are in the project root containing `Dockerfile`.
 
 ```bash
 # Set your project ID
 export PROJECT_ID="james-gcp-project"
 gcloud config set project $PROJECT_ID
-
-# Get the Project Number (required for the Google-managed service agents)
-PROJECT_NUMBER=$(gcloud projects describe ${PROJECT_ID} --format="value(projectNumber)")
 
 # 1. Create a dedicated Service Account for Garmin Sync
 gcloud iam service-accounts create garmin \
@@ -95,43 +106,17 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member="serviceAccount:garmin@${PROJECT_ID}.iam.gserviceaccount.com" \
   --role="roles/bigquery.jobUser"
 
-# This grants the Google-managed Scheduler service agent permission to create OIDC tokens
-gcloud iam service-accounts add-iam-policy-binding \
-  "garmin@${PROJECT_ID}.iam.gserviceaccount.com" \
-  --member="serviceAccount:service-${PROJECT_NUMBER}@gcp-sa-cloudscheduler.iam.gserviceaccount.com" \
-  --role="roles/iam.serviceAccountTokenCreator"
+# Make sure you have created the following secrets in Google Secret Manager beforehand:
+# 1. garmin-google-oauth-client-id (from OAuth setup)
+# 2. garmin-google-oauth-secret (from OAuth setup)
 
-# 4. Deploy the 2nd Gen Cloud Function
-gcloud functions deploy garmin-to-bq \
-  --gen2 \
-  --runtime=python313 \
-  --region=europe-west1 \
-  --source=. \
-  --entry-point=cloud_function_entry \
-  --trigger-http \
-  --no-allow-unauthenticated \
-  --service-account="garmin@${PROJECT_ID}.iam.gserviceaccount.com" \
-  --timeout=540s \
-  --memory=1024MB
+gcloud run deploy garmin-os \
+  --source . \
+  --region europe-west1 \
+  --service-account "garmin@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --allow-unauthenticated
 
-# 5. Grant Invoker permission (Unified Function-level binding)
-gcloud functions add-invoker-policy-binding garmin-to-bq \
-  --region=europe-west1 \
-  --member="serviceAccount:garmin@${PROJECT_ID}.iam.gserviceaccount.com"
-
-# 6. Create (or Update) the Cloud Scheduler Job
-FUNCTION_URL=$(gcloud functions describe garmin-to-bq --gen2 --region=europe-west1 --format="value(serviceConfig.uri)")
-
-# Use 'update' if job exists, or 'create' for first time. 
-# "0 6 * * *" is once daily at 6AM.
-gcloud scheduler jobs update http garmin-to-bq \
-  --location=europe-west1 \
-  --schedule="0 6 * * *" \
-  --time-zone="Europe/London" \
-  --uri=$FUNCTION_URL \
-  --http-method=POST \
-  --oidc-service-account-email="garmin@${PROJECT_ID}.iam.gserviceaccount.com" \
-  --oidc-token-audience=$FUNCTION_URL
+# 5. Make sure you update the Authorized redirect URIs in the Google Cloud Console with the newly generated Cloud Run URL!
 ```
 
 ## Inspiration & References
