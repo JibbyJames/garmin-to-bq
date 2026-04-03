@@ -88,7 +88,17 @@ gcloud config set project $PROJECT_ID
 gcloud iam service-accounts create garmin \
   --display-name="Garmin Sync Service Account"
 
-# 2. Grant Secret Manager access 
+# 2. Enable Firestore and create database (required for session hydration)
+# This creates the '(default)' database used by the application
+gcloud services enable firestore.googleapis.com
+gcloud firestore databases create --location=europe-west1
+
+# 3. Grant required permissions to the Service Account
+# roles/datastore.user provides access to the '(default)' Firestore database
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:garmin@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --role="roles/datastore.user"
+
 gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member="serviceAccount:garmin@${PROJECT_ID}.iam.gserviceaccount.com" \
   --role="roles/secretmanager.secretAccessor"
@@ -97,7 +107,6 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member="serviceAccount:garmin@${PROJECT_ID}.iam.gserviceaccount.com" \
   --role="roles/secretmanager.secretVersionAdder"
 
-# 3. Grant BigQuery access
 gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member="serviceAccount:garmin@${PROJECT_ID}.iam.gserviceaccount.com" \
   --role="roles/bigquery.dataEditor"
@@ -109,6 +118,8 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 # Make sure you have created the following secrets in Google Secret Manager beforehand:
 # 1. garmin-google-oauth-client-id (from OAuth setup)
 # 2. garmin-google-oauth-secret (from OAuth setup)
+# 3. garmin-email (Your Garmin Connect email)
+# 4. garmin-password (Your Garmin Connect password)
 
 gcloud run deploy garmin-os \
   --source . \

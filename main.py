@@ -17,6 +17,7 @@ from pathlib import Path
 from garminconnect import Garmin
 from google.cloud import bigquery
 from google.cloud import secretmanager
+from google.cloud import firestore
 from google.cloud.exceptions import NotFound
 
 # --- BigQuery Configuration ---
@@ -97,11 +98,32 @@ def update_secret(secret_id, payload, project_id=BQ_PROJECT):
     except Exception as e:
         logger.error(f"Failed to update secret {secret_id}: {e}")
 
-def init_api():
-    """Initialize Garmin API with verbose feedback."""
-    
-    # Removed random sleep for cloud run sync
+# --- Firestore Helpers ---
+def get_session_firestore(project_id=BQ_PROJECT):
+    try:
+        db = firestore.Client(project=project_id)
+        doc_ref = db.collection("garmin").document("session")
+        doc = doc_ref.get()
+        if doc.exists:
+            return doc.to_dict()
+        return None
+    except Exception as e:
+        logger.warning(f"Failed to access Firestore session: {e}")
+        return None
 
+def save_session_firestore(tokens, project_id=BQ_PROJECT):
+    try:
+        db = firestore.Client(project=project_id)
+        doc_ref = db.collection("garmin").document("session")
+        doc_ref.set(tokens)
+        logger.info("Updated Firestore session with new tokens")
+    except Exception as e:
+        logger.error(f"Failed to update Firestore session: {e}")
+
+def init_api():
+
+    """Initialize Garmin API with hydration strategy (Firestore/GCS)."""
+    
     garth.configure(domain="garmin.com")
     garth.client.sess.headers.update({
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
@@ -109,81 +131,68 @@ def init_api():
     
     tokenstore_path = Path("/tmp/.garminconnect" if IS_CLOUD_FUNCTION else "~/.garminconnect").expanduser()
     
-    # Read GCP secret
-    gcp_tokens_json = get_secret("garmin-tokens")
+    # 1. Check if a session file exists in Firestore (Hydration)
+    logger.info("Hydrating session from Firestore...")
+    session_data = get_session_firestore()
     
-    # Use local if present, else load from GCP
-    if not tokenstore_path.exists() and gcp_tokens_json:
+    # 2. Download: If it exists, download it to the /tmp directory
+    if session_data:
         tokenstore_path.mkdir(parents=True, exist_ok=True)
         try:
-            tokens = json.loads(gcp_tokens_json)
-            for filename, content in tokens.items():
+            for filename, content in session_data.items():
                 (tokenstore_path / filename).write_text(content)
-        except json.JSONDecodeError:
-            logger.error("Failed to decode token JSON from secret manager")
+            logger.info(f"Session hydrated to {tokenstore_path}")
+        except Exception as e:
+            logger.error(f"Failed to write session files to /tmp: {e}")
+            session_data = None # Reset so we don't try to load invalid files
 
-    # Try token-based login first
-    if tokenstore_path.exists():
-        logger.info(f"Checking for tokens in {tokenstore_path}...")
+    garmin = None
+    if tokenstore_path.exists() and session_data:
+        # 3. Initialize: Point the Garmin client to that /tmp file
+        logger.info("Initializing Garmin client with hydrated session...")
         try:
             garmin = Garmin()
-            garmin.garth.load(str(tokenstore_path))
+            garmin.login(str(tokenstore_path))
             
-            if garmin.garth.username:
-                logger.info("Session loaded. Testing connection...")
-                # Set required profile properties for garminconnect to build URLs correctly
-                garmin.display_name = garmin.garth.profile.get("displayName")
-                garmin.full_name = garmin.garth.profile.get("fullName")
-                logger.info("Login successful using stored tokens.")
-            else:
-                garmin.login(str(tokenstore_path))
-                logger.info("Login successful using stored tokens.")
+            # 4. Validate: Attempt a light call (e.g., get_full_name())
+            logger.info("Validating session with light call (get_full_name)...")
+            full_name = garmin.get_full_name()
+            logger.info(f"Session valid. User: {full_name}")
             
-            # Dump to local in case tokens were refreshed during login
+            # 5. Re-upload: If library updates the session, upload the new version back to Firestore
+            # Garth refreshes tokens automatically if expired but still refreshable.
+            # We'll re-dump and compare.
             garmin.garth.dump(str(tokenstore_path))
             
-            # Compare current tokens with GCP secret and update if needed
             current_tokens = {}
             for filepath in tokenstore_path.iterdir():
                 if filepath.is_file():
                     current_tokens[filepath.name] = filepath.read_text()
             
-            needs_update = True
-            if gcp_tokens_json:
-                try:
-                    if json.loads(gcp_tokens_json) == current_tokens:
-                        needs_update = False
-                except json.JSONDecodeError:
-                    pass
+            if current_tokens != session_data:
+                logger.info("Tokens updated during initialization/validation. Updating Firestore...")
+                save_session_firestore(current_tokens)
             
-            if needs_update:
-                logger.info("Tokens differ from GCP secret (likely refreshed). Updating secret...")
-                update_secret("garmin-tokens", json.dumps(current_tokens))
-                
             return garmin
         except Exception as e:
-            logger.warning(f"⚠️ Token login failed: {e}. Falling back to credentials.")
+            logger.warning(f"⚠️ Hydrated session invalid or expired: {e}. Falling back to credentials.")
 
-    # Get credentials from secrets
+    # Fallback: Login with credentials from Secrets
     email = get_secret("garmin-email")
     password = get_secret("garmin-password")
 
-    # If secrets are not found, prompt the user (only if not running as a cloud function)
     if not IS_CLOUD_FUNCTION:
         if not email:
             email = input("Login email: ")
         if not password:
             password = getpass("Enter password: ")
     
-    # If no email or password is provided, return None
     if not email or not password:
          logger.error("Missing email or password.")
          return None
 
-    # Try credential-based login
     try:
         logger.info(f"Attempting manual login for: {email}")
-        # Note: 'is_cn=False' is for non-China accounts
         garmin = Garmin(email, password, is_cn=False, return_on_mfa=True)
         garmin.garth.sess.headers.update({"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"})
         result = garmin.login()
@@ -198,32 +207,24 @@ def init_api():
             garmin.resume_login(result[1], mfa_code)
         
         # Save tokens for next time
+        tokenstore_path.mkdir(parents=True, exist_ok=True)
         garmin.garth.dump(str(tokenstore_path))
         logger.info(f"Login successful. Tokens saved to {tokenstore_path}")
         
-        # Compare current tokens with GCP secret and update if needed
+        # Upload new session to Firestore
         current_tokens = {}
         for filepath in tokenstore_path.iterdir():
             if filepath.is_file():
                 current_tokens[filepath.name] = filepath.read_text()
         
-        needs_update = True
-        if gcp_tokens_json:
-            try:
-                if json.loads(gcp_tokens_json) == current_tokens:
-                    needs_update = False
-            except json.JSONDecodeError:
-                pass
-                
-        if needs_update:
-            logger.info("Updating GCP secret with new tokens...")
-            update_secret("garmin-tokens", json.dumps(current_tokens))
+        save_session_firestore(current_tokens)
             
         return garmin
 
     except Exception as e:
         logger.error(f"LOGIN FAILED: {e}")
         return None
+
 
 def main(cmd_args=None):
     parser = argparse.ArgumentParser(description="Fetch Garmin Connect data.")

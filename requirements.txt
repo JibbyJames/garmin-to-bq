@@ -2,6 +2,7 @@ garminconnect==0.2.38
 garth
 google-cloud-bigquery
 google-cloud-secret-manager
+google-cloud-firestore
 pandas
 pyarrow
 db-dtypes
