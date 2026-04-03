@@ -135,3 +135,14 @@ gcloud run deploy garmin-os \
 The extraction logic uses the [python-garminconnect](https://github.com/cyberjunky/python-garminconnect) library. 
 
 Many of the precise metric extractions (like VO2 Max, Sleep Score, HR Zones, and Body Composition) were modeled directly from the library's primary [demo.py file](https://github.com/cyberjunky/python-garminconnect/blob/master/demo.py).
+
+
+## TODO
+
+- Make latest KPIs compared with current average (update SQL required)
+- Add a title to the KPIs page
+- See if OAuth session duration can be increased (browser cookies?)
+- Show "Last Updated" time/date somewhere
+- Remove colon after week activity titles
+- Remove X on main dashboard
+- Ask Gen AI for features/ideas/improvements
