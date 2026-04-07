@@ -41,14 +41,14 @@ You can run the script via the command line to specify custom date ranges and ex
 
 **Examples:**
 ```bash
-# Fetch data from March 1st to March 5th and print to console
+# Fetch data and print to console
 python main.py --start-date 2026-02-01 --end-date 2026-03-25
 
-# Fetch data from March 5th up to today and export it to CSV
+# Fetch data and export it to CSV
 python main.py --start-date 2026-03-05 --export-csv
 
-# Overwrite BigQuery tables with data from March 1st
-python main.py --start-date 2026-03-01 --export-bq overwrite
+# Append/update BigQuery tables with data
+python main.py --start-date 2026-04-01 --export-bq append
 ```
 
 ## Running as a Cloud Run Web Application
@@ -115,19 +115,45 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member="serviceAccount:garmin@${PROJECT_ID}.iam.gserviceaccount.com" \
   --role="roles/bigquery.jobUser"
 
+# 4. Configure Static IP for Egress Requests
+# This routes all outbound API requests through a single, static IP address
+gcloud compute networks create james-network --subnet-mode=custom
+
+gcloud compute networks subnets create james-subnet \
+  --network=james-network \
+  --range=10.124.0.0/24 \
+  --region=europe-west1
+
+gcloud compute routers create james-router \
+  --network=james-network \
+  --region=europe-west1
+
+gcloud compute addresses create james-static-ip \
+  --region=europe-west1
+
+gcloud compute routers nats create james-nat \
+  --router=james-router \
+  --region=europe-west1 \
+  --nat-all-subnet-ip-ranges \
+  --nat-external-ip-pool=james-static-ip
+
 # Make sure you have created the following secrets in Google Secret Manager beforehand:
 # 1. garmin-google-oauth-client-id (from OAuth setup)
 # 2. garmin-google-oauth-secret (from OAuth setup)
 # 3. garmin-email (Your Garmin Connect email)
 # 4. garmin-password (Your Garmin Connect password)
 
+# 5. Deploy Cloud Run application using Direct VPC Egress
 gcloud run deploy garmin-os \
   --source . \
   --region europe-west1 \
   --service-account "garmin@${PROJECT_ID}.iam.gserviceaccount.com" \
-  --allow-unauthenticated
+  --allow-unauthenticated \
+  --network james-network \
+  --subnet james-subnet \
+  --vpc-egress all-traffic
 
-# 5. Make sure you update the Authorized redirect URIs in the Google Cloud Console with the newly generated Cloud Run URL!
+# 6. Make sure you update the Authorized redirect URIs in the Google Cloud Console with the newly generated Cloud Run URL!
 ```
 
 ## Inspiration & References
@@ -139,10 +165,20 @@ Many of the precise metric extractions (like VO2 Max, Sleep Score, HR Zones, and
 
 ## TODO
 
-- Make latest KPIs compared with current average (update SQL required)
-- Add a title to the KPIs page
-- See if OAuth session duration can be increased (browser cookies?)
-- Show "Last Updated" time/date somewhere
-- Remove colon after week activity titles
-- Remove X on main dashboard
-- Ask Gen AI for features/ideas/improvements
+- Misc
+    - Remove X on main dashboard
+    - See if OAuth session duration can be increased (browser cookies?)
+    - Show "Last Updated" time/date somewhere
+    - Ask Gen AI for features/ideas/improvements
+
+- KPIs
+    - Make latest KPIs compared with current average (update SQL required)
+    - Add a title to the KPIs page
+
+- Week
+    - Remove colon after week activity titles
+    - Show "Total %" in week progress
+    - Show week progress (based on time of day)
+
+- Charts
+    - Create a new charts tab with the KPI metrics on time series graphs
