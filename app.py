@@ -3,30 +3,36 @@ import os
 # Disable werkzeug colors for git bash compatibility (MUST be before flask import)
 os.environ["WERKZEUG_COLOR"] = "0"
 
-import datetime
-import threading
-import logging
-from collections import deque
-from concurrent.futures import ThreadPoolExecutor
 from flask import Flask, redirect, url_for, session, render_template, request, jsonify
 from authlib.integrations.flask_client import OAuth
 from google.cloud import bigquery
-import main as garmin_sync
+from google.cloud import secretmanager
+from google.cloud.exceptions import NotFound
+from concurrent.futures import ThreadPoolExecutor
 
 app = Flask(__name__)
 
-# Fetch Google OAuth secrets direct from GCP Secret Manager via main.py (or via ENV block for local testing)
-FLASK_SECRET = os.environ.get("FLASK_SECRET_KEY") or os.urandom(24)
+BQ_PROJECT = "james-gcp-project"
 
+def get_secret(secret_id, project_id=BQ_PROJECT):
+    client = secretmanager.SecretManagerServiceClient()
+    name = f"projects/{project_id}/secrets/{secret_id}/versions/latest"
+    try:
+        response = client.access_secret_version(request={"name": name})
+        return response.payload.data.decode("UTF-8")
+    except Exception as e:
+        print(f"Failed to access secret {secret_id}: {e}")
+        return None
+
+# Fetch Google OAuth secrets direct from GCP Secret Manager via env or API
+FLASK_SECRET = os.environ.get("FLASK_SECRET_KEY") or os.urandom(24)
 is_prod = os.environ.get("K_SERVICE") is not None
 secret_suffix = "" if is_prod else "-dev"
 
-GOOGLE_CLIENT_ID = garmin_sync.get_secret(f"garmin-google-oauth-client-id{secret_suffix}") 
-GOOGLE_CLIENT_SECRET = garmin_sync.get_secret(f"garmin-google-oauth-secret{secret_suffix}")
+GOOGLE_CLIENT_ID = get_secret(f"garmin-google-oauth-client-id{secret_suffix}") 
+GOOGLE_CLIENT_SECRET = get_secret(f"garmin-google-oauth-secret{secret_suffix}")
 
-# Secret key needs to be set for sessions
 app.secret_key = FLASK_SECRET
-
 oauth = OAuth(app)
 google = oauth.register(
     name='google',
@@ -37,57 +43,6 @@ google = oauth.register(
 )
 
 ALLOWED_USER = "jjbuckley.91@gmail.com"
-
-# Logging setup for the background thread
-class MemoryLogHandler(logging.Handler):
-    def __init__(self, maxlen=200):
-        super().__init__()
-        self.logs = deque(maxlen=maxlen)
-    def emit(self, record):
-        self.logs.append(self.format(record))
-        
-sync_log_handler = MemoryLogHandler()
-sync_log_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-garmin_sync.logger.addHandler(sync_log_handler)
-
-sync_status = {
-    "is_running": False,
-    "last_run": None,
-    "error": None
-}
-
-def bg_sync_task():
-    global sync_status
-    sync_status["is_running"] = True
-    sync_status["error"] = None
-    sync_log_handler.logs.clear()
-    
-    garmin_sync.logger.info("Starting Garmin Sync task...")
-    try:
-        # Check bigquery for latest date
-        client = bigquery.Client()
-        query = "SELECT MAX(Date) as max_date FROM `james-gcp-project.garmin.daily_stats`"
-        job = client.query(query)
-        result = list(job.result())
-        start_date = result[0].max_date if result and result[0].max_date else (datetime.date.today() - datetime.timedelta(days=14))
-        
-        today = datetime.date.today()
-        
-        # We run the command similar to the old cloud_function_entry
-        cmd_args = [
-            "--start-date", start_date.isoformat(),
-            "--end-date", today.isoformat(),
-            "--export-bq", "append",
-            "--quiet"
-        ]
-        garmin_sync.main(cmd_args)
-        garmin_sync.logger.info("Sync task completed successfully.")
-        sync_status["last_run"] = datetime.datetime.now().isoformat()
-    except Exception as e:
-        garmin_sync.logger.error(f"Sync task failed: {e}")
-        sync_status["error"] = str(e)
-    finally:
-        sync_status["is_running"] = False
 
 @app.before_request
 def require_oauth():
@@ -109,7 +64,6 @@ def login():
 @app.route('/authorize')
 def authorize():
     token = google.authorize_access_token()
-    # With OpenID Connect, userinfo is parsed directly from the ID token
     user_info = token.get('userinfo')
     session['user'] = user_info
     return redirect(url_for('dashboard'))
@@ -132,6 +86,7 @@ def fetch_bq_data(query):
 
 @app.route('/dashboard')
 def dashboard():
+    # Utilizing the new schemas based on garmin-givemydata
     query_kpis = "SELECT * FROM `james-gcp-project.garmin.health_kpis`"
     query_week = "SELECT * FROM `james-gcp-project.garmin.week_progress` ORDER BY goal_name"
     
@@ -146,19 +101,19 @@ def dashboard():
 
 @app.route('/sync', methods=['POST'])
 def run_sync():
-    if not sync_status["is_running"]:
-        thread = threading.Thread(target=bg_sync_task)
-        thread.start()
-        return jsonify({"status": "started"})
-    return jsonify({"status": "already_running"})
+    # Sync is now handled autonomously via a Cloud Scheduler triggering the Cloud Run Job.
+    return jsonify({
+        "status": "info",
+        "message": "Manual sync via the UI is disabled. The Cloud Run Sync Job executes daily via Cloud Scheduler."
+    })
 
 @app.route('/sync/status')
 def get_sync_status():
     return jsonify({
-        "is_running": sync_status["is_running"],
-        "logs": list(sync_log_handler.logs),
-        "last_run": sync_status["last_run"],
-        "error": sync_status["error"]
+        "is_running": False,
+        "logs": ["Sync runs asynchronously via Cloud Run Jobs."],
+        "last_run": "See GCP Cloud Scheduler",
+        "error": None
     })
 
 if __name__ == '__main__':

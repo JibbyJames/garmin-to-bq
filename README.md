@@ -1,169 +1,87 @@
 # Garmin to BigQuery (garmin-to-bq)
 
-This script is designed to extract health and activity data from Garmin Connect and export it. It supports viewing the data in the console, exporting it to CSVs, or uploading it directly to Google BigQuery.
+This repository extracts health and activity data from Garmin Connect and exports it to Google BigQuery. 
+To bypass advanced Cloudflare bot-mitigation applied by Garmin, this backend relies upon `garmin-givemydata` which utilizes `seleniumbase` and Xvfb for headless stealth extraction.
 
 ## What is Collected?
 
-### 1. Daily Stats
-Extracts summary health metrics for each day:
-- **Date**
-- **Resting Heart Rate (RHR)**
-- **Total Steps**
-- **Weight (kg)**, **Body Fat %**, & **Muscle Mass (kg)**
-- **VO2 Max** (Precise Value)
-- **Fitness Age** & **Youth Bonus**
-- **Vigorous Minutes** (Average from the last 6 weeks)
-- **Sleep Score** & **Average Stress**
-
-### 2. Recent Activities
-Extracts individual logged activities (e.g. Strength, Cycling, Running):
-- **Start Time** & **Activity Name** (Activity type is also collected)
-- **Duration (Min)** & **Calories**
-- **Average HR** & **Max HR**
-- **Moderate / Vigorous Intensity Minutes**
-- **HR Zones (1-5)** (Time spent in each zone)
+The project runs an automated daily extraction pulling all historical FIT data and synchronizing it into a local SQLite database, before transforming the data into 47 unique CSV tables spanning all Garmin metrics, which are then natively ingested into Google BigQuery. 
 
 ## Prerequisites
-- `pip install garminconnect` (required to use the Garmin API)
-- `pip install google-cloud-bigquery pandas pyarrow` (required if exporting to BigQuery)
+- Docker (for local testing of the orchestrated job)
+- Google Cloud Platform Account
+- Google Secret Manager and Google Cloud Storage (for session state persistence)
 
-## Usage
+## Automated Extraction Architecture
 
-You can run the script via the command line to specify custom date ranges and export options. By default, running `python main.py` checks the past 14 days and prints to the console.
+The extraction process operates entirely serverless within Google Cloud Platform using a distributed **Cloud Run Job** (`sync_orchestrator.py`).
+It is triggered on a daily cadence via **Google Cloud Scheduler**. State (e.g. SQLite database, `.garmin-givemydata` directory, and Cloudflare cookies) is dynamically preserved across serverless executions within Google Cloud Storage.
 
-**Command Line Arguments:**
-- `--start-date YYYY-MM-DD`: The date to start fetching data from.
-- `--end-date YYYY-MM-DD`: The date to stop fetching data. (If `--start-date` is provided but this isn't, it defaults to today).
-- `--export-csv`: A flag that, if present, enables exporting the console tables into an `exports/` folder with timestamped filenames.
-- `--export-bq {overwrite,append}`: Exports data to BigQuery. Requires `BQ_PROJECT` and `BQ_DATASET` constants to be set in `main.py`. **Note**: If `append` is used, any existing records within the chosen date range will be deleted before new records are inserted to prevent duplicates.
-- `--skip {daily,activities}`: Skips either daily stats or activities api call
-- `--quiet`: Suppresses printing the formatted tables to the console (useful for automated runs).
+## Web Application Dashboard
 
-**Examples:**
-```bash
-# Fetch data and print to console
-python main.py --start-date 2026-02-01 --end-date 2026-03-25
-
-# Fetch data and export it to CSV
-python main.py --start-date 2026-03-05 --export-csv
-
-# Append/update BigQuery tables with data
-python main.py --start-date 2026-04-01 --export-bq append
-```
-
-## Running as a Cloud Run Web Application
-
-This project has been refactored to run as a full Flask web application hosted on Google Cloud Run. It features a retro GameBoy UI, mobile PWA capabilities, restricted access via Google OAuth, and manual execution triggers directly from the UI.
+This project runs a separate Flask web application on Google Cloud Run to provide a visual dashboard. It features a retro GameBoy UI, mobile PWA capabilities, and limits viewing access to specific users via Google OAuth.
 
 ### 1. Configure Google OAuth credentials
+To secure the dashboard, setup OAuth:
+1. Navigate to your Google Cloud Console **APIs & Services** > **Credentials**.
+2. Click **Create Credentials** > **OAuth client ID** (Web Application).
+3. Add an Authorized Redirect URI (e.g., `https://your-cloud-run-url.a.run.app/authorize`).
+4. Save the **Client ID** and **Client Secret** into Google Secret Manager as `garmin-google-oauth-client-id` and `garmin-google-oauth-secret`.
 
-Before deploying, you must create OAuth credentials for the application to authenticate users:
+***
 
-1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
-2. Navigate to **APIs & Services** > **Credentials**.
-3. Click **Create Credentials** > **OAuth client ID**.
-4. Set Application Type to **Web application**.
-5. Add an Authorized Redirect URI. E.g. `https://your-cloud-run-url.a.run.app/authorize`.
-6. Copy the **Client ID** and **Client Secret**. Provide these as environment variables during deployment (or save them into Google Secret Manager natively).
+## Full Deployment Guide
 
-### 2. Testing Locally
-
-To test the application locally:
-1. Make sure you have created the `-dev` suffixed secrets in Secret Manager (`garmin-google-oauth-client-id-dev` and `garmin-google-oauth-client-secret-dev`).
-2. Add `http://127.0.0.1:5000/authorize` to your Google OAuth Authorized Redirect URIs.
-3. Authenticate your local terminal with GCP via `gcloud auth application-default login`.
-4. Allow local HTTP OAuth testing by exporting the insecure transport flag: `export OAUTHLIB_INSECURE_TRANSPORT="1"`.
-5. Run the server using `flask run --host=127.0.0.1 --port=5000`.
-
-### 3. Deployment Guide
-
-You can deploy the Cloud Run Web App and the associated Service Account using the `gcloud` CLI. Ensure you are in the project root containing `Dockerfile`.
+We separate the deployment into two layers: the Web Dashboard (Service), and the Data Extraction (Job). Make sure you are authenticated with `gcloud`.
 
 ```bash
-# Set your project ID
 export PROJECT_ID="james-gcp-project"
 gcloud config set project $PROJECT_ID
 
-# 1. Create a dedicated Service Account for Garmin Sync
-gcloud iam service-accounts create garmin \
-  --display-name="Garmin Sync Service Account"
+# Run the supplied setup script to automatically provision:
+# 1. Static NAT IP networking infrastructure
+# 2. Cloud Run Service (Web Dashboard Deployment)
+# 3. Cloud Storage State Buckets
+# 4. Cloud Run Job and Daily Scheduler
+chmod +x scripts/setup_gcp_resources.sh
+./scripts/setup_gcp_resources.sh
+```
 
-# 2. Enable Firestore and create database (required for session hydration)
-# This creates the '(default)' database used by the application
-gcloud services enable firestore.googleapis.com
-gcloud firestore databases create --location=europe-west1
+### 3. Initial CAPTCHA Auth Bootstrap
 
-# 3. Grant required permissions to the Service Account
-# roles/datastore.user provides access to the '(default)' Firestore database
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member="serviceAccount:garmin@${PROJECT_ID}.iam.gserviceaccount.com" \
-  --role="roles/datastore.user"
+Because `garmin-givemydata` utilizes specialized bot-evasion via a headless browser profile, **you must complete the very first login manually from your local machine**. 
+To ensure Cloudflare doesn't immediately invalidate the proxy session when it moves to the cloud, your initial local execution MUST route its traffic through the exact same `james-static-ip` created above.
 
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member="serviceAccount:garmin@${PROJECT_ID}.iam.gserviceaccount.com" \
-  --role="roles/secretmanager.secretAccessor"
+We provide a script to spawn a temporary Compute Engine proxy tunnel for this exact purpose:
+```bash
+# 1. Run the proxy script to open a local SOCKS5 tunnel
+chmod +x scripts/create_vpn_proxy.sh
+./scripts/create_vpn_proxy.sh
 
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member="serviceAccount:garmin@${PROJECT_ID}.iam.gserviceaccount.com" \
-  --role="roles/secretmanager.secretVersionAdder"
+# 2. Configure Windows to use the proxy (Settings > Network & internet > Proxy > Setup)
+# Route Windows traffic to `localhost` Port `1080`.
+# (Verify your IP is the static GCP IP at ifconfig.me)
 
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member="serviceAccount:garmin@${PROJECT_ID}.iam.gserviceaccount.com" \
-  --role="roles/bigquery.dataEditor"
+# 3. Run the python extraction script locally!
+python sync_orchestrator.py
 
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member="serviceAccount:garmin@${PROJECT_ID}.iam.gserviceaccount.com" \
-  --role="roles/bigquery.jobUser"
+# 4. The script will pop open a secure browser. Log into Garmin Connect normally.
+# Once finished computing (it may take 10 minutes to pull your entire history), the orchestrator automatically uploads your `.garmin-givemydata/` database and session straight to the Google Cloud Bucket we created earlier!
 
-# 4. Configure Static IP for Egress Requests
-# This routes all outbound API requests through a single, static IP address
-gcloud compute networks create james-network --subnet-mode=custom
-
-gcloud compute networks subnets create james-subnet \
-  --network=james-network \
-  --range=10.124.0.0/24 \
-  --region=europe-west1
-
-gcloud compute routers create james-router \
-  --network=james-network \
-  --region=europe-west1
-
-gcloud compute addresses create james-static-ip \
-  --region=europe-west1
-
-gcloud compute routers nats create james-nat \
-  --router=james-router \
-  --region=europe-west1 \
-  --nat-all-subnet-ip-ranges \
-  --nat-external-ip-pool=james-static-ip
-
-# Make sure you have created the following secrets in Google Secret Manager beforehand:
-# 1. garmin-google-oauth-client-id (from OAuth setup)
-# 2. garmin-google-oauth-secret (from OAuth setup)
-# 3. garmin-email (Your Garmin Connect email)
-# 4. garmin-password (Your Garmin Connect password)
-
-# 5. Deploy Cloud Run application using Direct VPC Egress
-gcloud run deploy garmin-os \
-  --source . \
-  --region europe-west1 \
-  --service-account "garmin@${PROJECT_ID}.iam.gserviceaccount.com" \
-  --allow-unauthenticated \
-  --network james-network \
-  --subnet james-subnet \
-  --vpc-egress all-traffic
-
-# 6. Make sure you update the Authorized redirect URIs in the Google Cloud Console with the newly generated Cloud Run URL!
+# 5. Disable your Windows Proxy and press Enter to terminate the VPN instance when done.
 ```
 
 ## Inspiration & References
 
-The extraction logic uses the [python-garminconnect](https://github.com/cyberjunky/python-garminconnect) library. 
-
-Many of the precise metric extractions (like VO2 Max, Sleep Score, HR Zones, and Body Composition) were modeled directly from the library's primary [demo.py file](https://github.com/cyberjunky/python-garminconnect/blob/master/demo.py).
+The extraction logic depends entirely on the [garmin-givemydata](https://github.com/nrvim/garmin-givemydata) repository, executing via SeleniumBase.
 
 
 ## TODO
+
+- Data Sync
+    - Export logic is missing many fields I require for the web app, so a custom SQLite querying task should be done instead
+    - Use the db_inspection.txt to assist with how to query the database
+    - Find out where the "vo2max_trend" data is being populated in the database as there doesn't appear to be the same VO2 Max readings anywhere.
 
 - Misc
     - Remove X on main dashboard

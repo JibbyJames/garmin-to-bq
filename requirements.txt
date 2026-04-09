@@ -1,8 +1,7 @@
-garminconnect==0.2.38
-garth
 google-cloud-bigquery
 google-cloud-secret-manager
 google-cloud-firestore
+google-cloud-storage
 pandas
 pyarrow
 db-dtypes
@@ -12,3 +11,4 @@ requests
 Flask
 Authlib
 gunicorn
+seleniumbase>=4.30

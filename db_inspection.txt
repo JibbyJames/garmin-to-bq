@@ -1,0 +1,2056 @@
+Connecting to database: garmin.db...
+
+============================================================
+ TABLE: DAILY_SUMMARY
+============================================================
+FIELDS:
+  - calendar_date
+  - total_steps
+  - daily_step_goal
+  - total_distance_meters
+  - total_kilocalories
+  - active_kilocalories
+  - bmr_kilocalories
+  - remaining_kilocalories
+  - highly_active_seconds
+  - active_seconds
+  - sedentary_seconds
+  - sleeping_seconds
+  - moderate_intensity_minutes
+  - vigorous_intensity_minutes
+  - intensity_minutes_goal
+  - floors_ascended
+  - floors_descended
+  - floors_ascended_goal
+  - min_heart_rate
+  - max_heart_rate
+  - resting_heart_rate
+  - avg_resting_heart_rate_7day
+  - average_stress_level
+  - max_stress_level
+  - low_stress_seconds
+  - medium_stress_seconds
+  - high_stress_seconds
+  - stress_qualifier
+  - body_battery_charged
+  - body_battery_drained
+  - body_battery_highest
+  - body_battery_lowest
+  - body_battery_most_recent
+  - body_battery_at_wake
+  - body_battery_during_sleep
+  - average_spo2
+  - lowest_spo2
+  - latest_spo2
+  - avg_waking_respiration
+  - highest_respiration
+  - lowest_respiration
+  - source
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "data": [
+    {
+      "bodyBattery": {
+        "chargedValue": 36,
+        "drainedValue": 42,
+        "featureVersion": "2.0",
+        "latestValue": 6,
+        "maxValue": 48,
+        "minValue": 6
+      },
+      "calendarDate": "2025-04-08",
+      "calories": {
+        "burnedActive": 831,
+        "burnedResting": 2095,
+        "burnedTotal": 2926
+      },
+      "heartRate": {
+        "maxValue": 155,
+        "minValue": 58,
+        "restingValue": 60
+      },
+      "hydration": {},
+      "includesActivityData": false,
+      "includesWellnessData": true,
+      "intensityMinutes": {
+        "goal": 300,
+        "moderate": 46,
+        "vigorous": 12
+      },
+      "jetLag": {},
+      "movement": {
+        "floorsAscended": {
+          "distanceInMeters": 44.68,
+          "goal": 0,
+          "value": 14
+        },
+        "floorsDescended": {
+          "distanceInMeters": 58.21,
+          "value": 19
+        },
+        "pushes": {},
+        "steps": {
+          "distanceInMeters": 10440,
+          "goal": 9120,
+          "value": 12678
+        }
+      },
+      "pulseOx": {},
+      "respiration": {
+        "algorithmVersion": 100,
+        "avgValue": 13,
+        "latestTimestampGmt": "2025-04-08T22:00:00.0",
+        "latestValue": 9,
+        "maxValue": 22,
+        "minValue": 8
+      },
+      "source": "garmin",
+      "stress": {
+        "activityDurationInMillis": 13020000,
+        "activityProportion": 0.15,
+        "avgLevel": 37,
+        "highStressDurationInMillis": 2640000,
+        "highStressProportion": 0.03,
+        "lowStressDurationInMillis": 33240000,
+        "lowStressProportion": 0.38,
+        "maxLevel": 98,
+        "mediumStressDurationInMillis": 9660000,
+        "mediumStressProportion": 0.11,
+        "qualifier": "very_stressful",
+        "restDurationInMillis": 18780000,
+        "restProportion": 0.22,
+        "totalDurationInMillis": 86400000,
+        "uncategorizedDurationInMillis": 9060000,
+        "uncategorizedProportion": 0.1
+      },
+      "userProfilePk": 121521741,
+      "uuid": "c87cb5e3-2cee-4fe7-ade4-b3761524a7dd",
+      "wellnessChronology": {
+        "endTimestampGmt": "2025-04-08T22:00:00.0",
+        "endTimestampLocal": "2025-04-09T00:00:00.0",
+        "startTimestampGmt": "2025-04-07T22:00:00.0",
+        "startTimestampLocal": "2025-04-08T00:00:00.0",
+        "totalDurationInMillis": 86400000
+      }
+    }
+	... (Massive Array)
+  ]
+}
+
+
+
+============================================================
+ TABLE: SLEEP
+============================================================
+FIELDS:
+  - calendar_date
+  - sleep_time_seconds
+  - nap_time_seconds
+  - deep_sleep_seconds
+  - light_sleep_seconds
+  - rem_sleep_seconds
+  - awake_sleep_seconds
+  - unmeasurable_sleep_seconds
+  - awake_count
+  - average_spo2
+  - lowest_spo2
+  - average_hr_sleep
+  - average_respiration
+  - lowest_respiration
+  - highest_respiration
+  - avg_sleep_stress
+  - sleep_score_feedback
+  - sleep_score_insight
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "bodyBatteryChange": 36,
+  "dailySleepDTO": {
+    "ageGroup": "ADULT",
+    "autoSleepEndTimestampGMT": null,
+    "autoSleepStartTimestampGMT": null,
+    "averageRespirationValue": 13,
+    "avgSleepStress": 24,
+    "awakeCount": 0,
+    "awakeSleepSeconds": 540,
+    "calendarDate": "2025-04-08",
+    "deepSleepSeconds": 4380,
+    "deviceRemCapable": true,
+    "highestRespirationValue": 16,
+    "id": 1744064580000,
+    "lightSleepSeconds": 15660,
+    "lowestRespirationValue": 8,
+    "napTimeSeconds": 0,
+    "remSleepSeconds": 5760,
+    "retro": false,
+    "sleepEndTimestampGMT": 1744090920000,
+    "sleepEndTimestampLocal": 1744098120000,
+    "sleepFromDevice": true,
+    "sleepQualityTypePK": null,
+    "sleepResultTypePK": null,
+    "sleepScoreFeedback": "POSITIVE_LONG_AND_CONTINUOUS",
+    "sleepScoreInsight": "POSITIVE_LATE_BED_TIME",
+    "sleepScorePersonalizedInsight": "NOT_AVAILABLE",
+    "sleepScores": {
+      "awakeCount": {
+        "optimalEnd": 1,
+        "optimalStart": 0,
+        "qualifierKey": "EXCELLENT"
+      },
+      "deepPercentage": {
+        "idealEndInSeconds": 8514,
+        "idealStartInSeconds": 4128,
+        "optimalEnd": 33,
+        "optimalStart": 16,
+        "qualifierKey": "GOOD",
+        "value": 17
+      },
+      "lightPercentage": {
+        "idealEndInSeconds": 16512,
+        "idealStartInSeconds": 7740,
+        "optimalEnd": 64,
+        "optimalStart": 30,
+        "qualifierKey": "GOOD",
+        "value": 61
+      },
+      "overall": {
+        "qualifierKey": "FAIR",
+        "value": 78
+      },
+      "remPercentage": {
+        "idealEndInSeconds": 7998,
+        "idealStartInSeconds": 5418,
+        "optimalEnd": 31,
+        "optimalStart": 21,
+        "qualifierKey": "GOOD",
+        "value": 22
+      },
+      "restlessness": {
+        "optimalEnd": 5,
+        "optimalStart": 0,
+        "qualifierKey": "EXCELLENT"
+      },
+      "stress": {
+        "optimalEnd": 15,
+        "optimalStart": 0,
+        "qualifierKey": "FAIR"
+      },
+      "totalDuration": {
+        "optimalEnd": 28800,
+        "optimalStart": 28800,
+        "qualifierKey": "GOOD"
+      }
+    },
+    "sleepStartTimestampGMT": 1744064580000,
+    "sleepStartTimestampLocal": 1744071780000,
+    "sleepTimeSeconds": 25800,
+    "sleepVersion": 2,
+    "sleepWindowConfirmationType": "enhanced_confirmed_final",
+    "sleepWindowConfirmed": true,
+    "unmeasurableSleepSeconds": 0,
+    "userProfilePK": 121521741
+  },
+  "remSleepData": true,
+  "restingHeartRate": 60,
+  "skinTempDataExists": false,
+  "sleepLevels": null,
+  "sleepMovement": null
+}
+
+
+
+============================================================
+ TABLE: HEART_RATE
+============================================================
+FIELDS:
+  - calendar_date
+  - resting_hr
+  - min_hr
+  - max_hr
+  - avg_hr
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "calendarDate": "2025-04-08",
+  "endTimestampGMT": "2025-04-08T22:00:00.0",
+  "endTimestampLocal": "2025-04-09T00:00:00.0",
+  "heartRateValueDescriptors": null,
+  "heartRateValues": null,
+  "lastSevenDaysAvgRestingHeartRate": 61,
+  "maxHeartRate": null,
+  "minHeartRate": null,
+  "restingHeartRate": 60,
+  "startTimestampGMT": "2025-04-07T22:00:00.0",
+  "startTimestampLocal": "2025-04-08T00:00:00.0",
+  "userProfilePK": 121521741
+}
+
+
+
+============================================================
+ TABLE: STRESS
+============================================================
+FIELDS:
+  - calendar_date
+  - avg_stress
+  - max_stress
+  - stress_qualifier
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "avgStressLevel": 37,
+  "calendarDate": "2025-04-08",
+  "endTimestampGMT": "2025-04-08T22:00:00.0",
+  "endTimestampLocal": "2025-04-09T00:00:00.0",
+  "maxStressLevel": 98,
+  "startTimestampGMT": "2025-04-07T22:00:00.0",
+  "startTimestampLocal": "2025-04-08T00:00:00.0",
+  "stressChartValueOffset": 1,
+  "stressChartYAxisOrigin": -1,
+  "stressValueDescriptorsDTOList": [],
+  "stressValuesArray": [],
+  "userProfilePK": 121521741
+}
+
+
+
+============================================================
+ TABLE: SPO2
+============================================================
+FIELDS:
+  - calendar_date
+  - avg_spo2
+  - min_spo2
+  - max_spo2
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "alertThresholdValue": null,
+  "averageSpO2": null,
+  "averageSpO2HR": null,
+  "calendarDate": "2025-04-08",
+  "deviceId": null,
+  "durationOfEventsBelowThreshold": null,
+  "lowestSpO2": null,
+  "numberOfEventsBelowThreshold": null,
+  "sleepMeasurementEndGMT": null,
+  "sleepMeasurementStartGMT": null,
+  "spo2ValueDescriptorsDTOList": [],
+  "spo2ValuesArray": [],
+  "userProfilePK": 121521741
+}
+
+
+
+============================================================
+ TABLE: RESPIRATION
+============================================================
+FIELDS:
+  - calendar_date
+  - avg_waking
+  - min_value
+  - max_value
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "avgSleepRespirationValue": 13,
+  "avgTomorrowSleepRespirationValue": 13,
+  "avgWakingRespirationValue": 13,
+  "calendarDate": "2025-04-08",
+  "endTimestampGMT": "2025-04-08T22:00:00.0",
+  "endTimestampLocal": "2025-04-09T00:00:00.0",
+  "highestRespirationValue": 22,
+  "lowestRespirationValue": 8,
+  "respirationAveragesValueDescriptorDTOList": [],
+  "respirationAveragesValuesArray": [],
+  "respirationValueDescriptorsDTOList": [],
+  "respirationValuesArray": [],
+  "respirationVersion": 100,
+  "sleepEndTimestampGMT": "2025-04-08T05:42:00.0",
+  "sleepEndTimestampLocal": "2025-04-08T07:42:00.0",
+  "sleepStartTimestampGMT": "2025-04-07T22:23:00.0",
+  "sleepStartTimestampLocal": "2025-04-08T00:23:00.0",
+  "startTimestampGMT": "2025-04-07T22:00:00.0",
+  "startTimestampLocal": "2025-04-08T00:00:00.0",
+  "tomorrowSleepEndTimestampGMT": "2025-04-09T05:20:00.0",
+  "tomorrowSleepEndTimestampLocal": "2025-04-09T07:20:00.0",
+  "tomorrowSleepStartTimestampGMT": "2025-04-08T21:41:00.0",
+  "tomorrowSleepStartTimestampLocal": "2025-04-08T23:41:00.0",
+  "userProfilePK": 121521741
+}
+
+
+
+============================================================
+ TABLE: BODY_BATTERY
+============================================================
+FIELDS:
+  - calendar_date
+  - charged
+  - drained
+  - highest
+  - lowest
+  - most_recent
+  - at_wake
+  - during_sleep
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "bodyBattery": {
+    "data": [],
+    "labels": [
+      "timestampGmt",
+      "value",
+      "bodyBatteryStatus",
+      "bodyBatteryVersion"
+    ]
+  },
+  "stress": {
+    "data": [],
+    "labels": [
+      "timestampGmt",
+      "value"
+    ]
+  }
+}
+
+
+
+============================================================
+ TABLE: STEPS
+============================================================
+FIELDS:
+  - calendar_date
+  - total_steps
+  - goal
+  - distance_meters
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "calendarDate": "2025-04-08",
+  "stepGoal": 9120,
+  "totalDistance": 10440,
+  "totalSteps": 12678
+}
+
+
+
+============================================================
+ TABLE: FLOORS
+============================================================
+FIELDS:
+  - calendar_date
+  - ascended
+  - descended
+  - goal
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "endTimestampGMT": "2025-04-08T22:00:00.0",
+  "endTimestampLocal": "2025-04-09T00:00:00.0",
+  "floorValuesArray": [],
+  "floorsValueDescriptorDTOList": [],
+  "startTimestampGMT": "2025-04-07T22:00:00.0",
+  "startTimestampLocal": "2025-04-08T00:00:00.0"
+}
+
+
+
+============================================================
+ TABLE: INTENSITY_MINUTES
+============================================================
+FIELDS:
+  - calendar_date
+  - moderate
+  - vigorous
+  - goal
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "calendarDate": "2025-04-08",
+  "dayOfGoalMet": null,
+  "endDayMinutes": 107,
+  "endTimestampGMT": "2025-04-08T22:00:00.0",
+  "endTimestampLocal": "2025-04-09T00:00:00.0",
+  "imValueDescriptorsDTOList": null,
+  "imValuesArray": null,
+  "moderateMinutes": 46,
+  "startDayMinutes": 37,
+  "startTimestampGMT": "2025-04-07T22:00:00.0",
+  "startTimestampLocal": "2025-04-08T00:00:00.0",
+  "userProfilePK": 121521741,
+  "vigorousMinutes": 12,
+  "weekGoal": 300,
+  "weeklyModerate": 195,
+  "weeklyTotal": 289,
+  "weeklyVigorous": 47
+}
+
+
+
+============================================================
+ TABLE: HYDRATION
+============================================================
+FIELDS:
+  - calendar_date
+  - goal_ml
+  - intake_ml
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "activityIntakeInML": null,
+  "baseGoalInML": 2839.056,
+  "calendarDate": "2025-04-08",
+  "goalInML": 2839.056,
+  "hydrationAutoGoalEnabled": true,
+  "hydrationContainers": [],
+  "hydrationMeasurementUnit": "cup",
+  "lastEntryTimestampLocal": null,
+  "sweatLossInML": null,
+  "userId": 121521741,
+  "valueInML": null
+}
+
+
+
+============================================================
+ TABLE: FITNESS_AGE
+============================================================
+FIELDS:
+  - calendar_date
+  - chronological_age
+  - fitness_age
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "achievableFitnessAge": 26.967086641406862,
+  "chronologicalAge": 33,
+  "components": {
+    "bodyFat": {
+      "improvementValue": 7.5,
+      "lastMeasurementDate": "2025-04-07",
+      "potentialAge": 27.713290845900467,
+      "priority": 1,
+      "stale": false,
+      "targetValue": 15.7,
+      "value": 23.2
+    },
+    "rhr": {
+      "stale": false,
+      "value": 62
+    },
+    "vigorousDaysAvg": {
+      "numOfWeeksForIm": 6,
+      "potentialAge": 30.599857431163564,
+      "priority": 3,
+      "stale": false,
+      "targetValue": 3,
+      "value": 2
+    },
+    "vigorousMinutesAvg": {
+      "numOfWeeksForIm": 6,
+      "potentialAge": 30.599857431163564,
+      "priority": 2,
+      "stale": false,
+      "targetValue": 75,
+      "value": 62.3
+    }
+  },
+  "fitnessAge": 30.863648538205805,
+  "lastUpdated": "2025-04-08T00:00:00.0",
+  "previousFitnessAge": 30.900817833317337
+}
+
+
+
+============================================================
+ TABLE: DAILY_MOVEMENT
+============================================================
+FIELDS:
+  - calendar_date
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "calendarDate": "2025-04-08",
+  "endTimestampGMT": "2025-04-08T22:00:00.0",
+  "endTimestampLocal": "2025-04-09T00:00:00.0",
+  "movementValueDescriptors": [
+    {
+      "index": 0,
+      "key": "timestamp"
+    },
+    {
+      "index": 1,
+      "key": "movement"
+    }
+  ],
+  "movementValues": [],
+  "startTimestampGMT": "2025-04-07T22:00:00.0",
+  "startTimestampLocal": "2025-04-08T00:00:00.0",
+  "userProfilePK": 121521741
+}
+
+
+
+============================================================
+ TABLE: WELLNESS_ACTIVITY
+============================================================
+FIELDS:
+  - calendar_date
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "activityName": "Health Snapshot - Morning",
+  "activityUuid": {
+    "uuid": "107f00af-25e3-42f2-81f0-3c0750059e6c"
+  },
+  "calendarDate": "2026-02-06",
+  "deviceMetaData": {
+    "deviceId": 3465836046,
+    "deviceName": "Venu 2S",
+    "deviceTypeId": 36832,
+    "deviceVersion": "19.05",
+    "deviceVersionId": 979009
+  },
+  "endTimestampGMT": "2026-02-06T07:17:16.30",
+  "endTimestampLocal": "2026-02-06T07:17:16.30",
+  "notes": null,
+  "rulePK": 2,
+  "startTimestampGMT": "2026-02-06T07:15:16.0",
+  "startTimestampLocal": "2026-02-06T07:15:16.0",
+  "summaryTypeDataList": [
+    {
+      "avgValue": 70,
+      "maxValue": 74,
+      "minValue": 67,
+      "summaryType": "HEART_RATE"
+    },
+    {
+      "avgValue": 14.869999885559082,
+      "maxValue": 15.529999732971191,
+      "minValue": 13.529999732971191,
+      "summaryType": "RESPIRATION"
+    },
+    {
+      "avgValue": 25,
+      "maxValue": 29,
+      "minValue": 18,
+      "summaryType": "STRESS"
+    },
+    {
+      "avgValue": 97,
+      "maxValue": 98,
+      "minValue": 95,
+      "summaryType": "SPO2"
+    },
+    {
+      "avgValue": 20,
+      "summaryType": "RMSSD_HRV"
+    },
+    {
+      "avgValue": 30,
+      "summaryType": "SDRR_HRV"
+    }
+  ],
+  "timeInZoneList": [
+    {
+      "millisInZone": 120000,
+      "zoneLowBoundary": 0,
+      "zoneNumber": 0
+    },
+    {
+      "millisInZone": 0,
+      "zoneLowBoundary": 94,
+      "zoneNumber": 1
+    },
+    {
+      "millisInZone": 0,
+      "zoneLowBoundary": 113,
+      "zoneNumber": 2
+    },
+    {
+      "millisInZone": 0,
+      "zoneLowBoundary": 132,
+      "zoneNumber": 3
+    },
+    {
+      "millisInZone": 0,
+      "zoneLowBoundary": 150,
+      "zoneNumber": 4
+    },
+    {
+      "millisInZone": 0,
+      "zoneLowBoundary": 169,
+      "zoneNumber": 5
+    }
+  ],
+  "userProfilePk": 121521741,
+  "wellnessActivityType": "HEALTH_MONITORING"
+}
+
+
+
+============================================================
+ TABLE: TRAINING_STATUS
+============================================================
+FIELDS:
+  - calendar_date
+  - status
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "lastPrimarySyncDate": null,
+  "latestTrainingStatusData": null,
+  "recordedDevices": null,
+  "showSelector": false,
+  "userId": null
+}
+
+
+
+============================================================
+ TABLE: HEALTH_STATUS
+============================================================
+FIELDS:
+  - calendar_date
+  - overall_status
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "extensions": {
+    "classification": "ValidationError"
+  },
+  "locations": [
+    {
+      "column": 44,
+      "line": 3
+    }
+  ],
+  "message": "Validation error of type FieldUndefined: Field 'metricsMap' in type 'HealthStatusSummaryDTO' is undefined @ 'healthStatusSummary/metricsMap'"
+}
+
+
+
+============================================================
+ TABLE: DAILY_EVENTS
+============================================================
+FIELDS:
+  - calendar_date
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "activitySubType": "elliptical",
+  "activityType": "fitness_equipment",
+  "calendarDate": "2025-04-08",
+  "deviceId": 3465836046,
+  "duration": 45,
+  "endTimestampGMT": "2025-04-08T19:52:00.0",
+  "endTimestampLocal": "2025-04-08T21:52:00.0",
+  "moderateIntensityMinutes": 5,
+  "startTimestampGMT": "2025-04-08T19:07:00.0",
+  "startTimestampLocal": "2025-04-08T21:07:00.0",
+  "userProfilePk": 121521741,
+  "vigorousIntensityMinutes": 3
+}
+
+
+
+============================================================
+ TABLE: ACTIVITY_TRENDS
+============================================================
+FIELDS:
+  - calendar_date
+  - activity_type
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "ALL": null
+}
+
+
+
+============================================================
+ TABLE: ACTIVITY
+============================================================
+FIELDS:
+  - activity_id
+  - activity_name
+  - activity_type
+  - activity_type_id
+  - parent_type_id
+  - start_time_local
+  - start_time_gmt
+  - duration_seconds
+  - elapsed_duration_seconds
+  - moving_duration_seconds
+  - distance_meters
+  - calories
+  - bmr_calories
+  - average_hr
+  - max_hr
+  - average_speed
+  - max_speed
+  - elevation_gain
+  - elevation_loss
+  - min_elevation
+  - max_elevation
+  - avg_power
+  - max_power
+  - norm_power
+  - training_stress_score
+  - intensity_factor
+  - aerobic_training_effect
+  - anaerobic_training_effect
+  - vo2max_value
+  - avg_cadence
+  - max_cadence
+  - avg_respiration
+  - training_load
+  - moderate_intensity_minutes
+  - vigorous_intensity_minutes
+  - start_latitude
+  - start_longitude
+  - end_latitude
+  - end_longitude
+  - location_name
+  - lap_count
+  - water_estimated
+  - min_temperature
+  - max_temperature
+  - manufacturer
+  - device_id
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "activityId": 14833822266,
+  "activityName": "Treadmill Running",
+  "activityType": {
+    "isHidden": false,
+    "parentTypeId": 1,
+    "restricted": false,
+    "trimmable": true,
+    "typeId": 18,
+    "typeKey": "treadmill_running"
+  },
+  "activityUUID": "5bb769d7-99bc-4cd4-8db0-d95dc86856fd",
+  "atpActivity": false,
+  "autoCalcCalories": false,
+  "averageHR": 145,
+  "averageRunningCadenceInStepsPerMinute": 122.453125,
+  "averageSpeed": 2.049999952316284,
+  "avgStrideLength": 100.69130317214577,
+  "beginTimestamp": 1712772042000,
+  "bmrCalories": 29,
+  "calories": 264,
+  "decoDive": false,
+  "deviceId": 3465836046,
+  "differenceBodyBattery": -3,
+  "distance": 2370,
+  "duration": 1156.2459716796875,
+  "elapsedDuration": 1156.2459716796875,
+  "elevationCorrected": false,
+  "endTimeGMT": "2024-04-10 18:19:58",
+  "eventType": {
+    "sortOrder": 10,
+    "typeId": 9,
+    "typeKey": "uncategorized"
+  },
+  "favorite": false,
+  "hasHeatMap": false,
+  "hasImages": false,
+  "hasPolyline": false,
+  "hasSplits": true,
+  "hasVideo": false,
+  "lapCount": 3,
+  "manualActivity": false,
+  "manufacturer": "GARMIN",
+  "maxDoubleCadence": 167,
+  "maxHR": 182,
+  "maxRunningCadenceInStepsPerMinute": 167,
+  "maxSpeed": 4.171000003814697,
+  "minActivityLapDuration": 300.7409973144531,
+  "moderateIntensityMinutes": 1,
+  "movingDuration": 1014,
+  "ownerDisplayName": "82b83a61-da96-4774-b7fd-1fb773f8ce1a",
+  "ownerFullName": "James Buckley",
+  "ownerId": 121521741,
+  "ownerProfileImageUrlLarge": "https://s3.amazonaws.com/garmin-connect-prod/profile_images/5c41da8b-676a-432f-835b-40359b3b4916-prof.png",
+  "ownerProfileImageUrlMedium": "https://s3.amazonaws.com/garmin-connect-prod/profile_images/5c41da8b-676a-432f-835b-40359b3b4916-prfr.png",
+  "ownerProfileImageUrlSmall": "https://s3.amazonaws.com/garmin-connect-prod/profile_images/5c41da8b-676a-432f-835b-40359b3b4916-prth.png",
+  "parent": false,
+  "pr": true,
+  "privacy": {
+    "typeId": 3,
+    "typeKey": "subscribers"
+  },
+  "purposeful": false,
+  "qualifyingDive": false,
+  "splitSummaries": [
+    {
+      "averageSpeed": 2.861999988555908,
+      "avgStress": 1,
+      "distance": 1951.8299560546875,
+      "duration": 681.9979858398438,
+      "maxDistance": 899,
+      "maxSpeed": 4.171000003814697,
+      "noOfSplits": 9,
+      "numClimbSends": 0,
+      "numFalls": 0,
+      "splitType": "RWD_RUN"
+    },
+    {
+      "averageSpeed": 0,
+      "avgStress": 1,
+      "distance": 0,
+      "duration": 36.24700164794922,
+      "maxDistance": 0,
+      "maxSpeed": 0,
+      "noOfSplits": 8,
+      "numClimbSends": 0,
+      "numFalls": 0,
+      "splitType": "RWD_STAND"
+    },
+    {
+      "averageSpeed": 1,
+      "avgStress": 1,
+      "distance": 442.1700134277344,
+      "duration": 441.9989929199219,
+      "maxDistance": 174,
+      "maxSpeed": 1.940999984741211,
+      "noOfSplits": 10,
+      "numClimbSends": 0,
+      "numFalls": 0,
+      "splitType": "RWD_WALK"
+    }
+  ],
+  "sportTypeId": 1,
+  "startTimeGMT": "2024-04-10 18:00:42",
+  "startTimeLocal": "2024-04-10 19:00:42",
+  "steps": 2188,
+  "summarizedDiveInfo": {
+    "summarizedDiveGases": []
+  },
+  "timeZoneId": 159,
+  "userPro": false,
+  "userRoles": [
+    "SCOPE_GOLF_API_READ",
+    "SCOPE_DI_OAUTH_2_DEVICE_REVOCATION_WRITE",
+    "SCOPE_DI_OAUTH_2_CREATE_DI_USER",
+    "SCOPE_ATP_READ",
+    "SCOPE_DIVE_API_WRITE",
+    "SCOPE_COMMUNITY_COURSE_ADMIN_READ",
+    "SCOPE_DIVE_API_READ",
+    "SCOPE_DT_ACTIVE_INTELLIGENCE_READ",
+    "SCOPE_DI_OAUTH_2_CLIENT_READ",
+    "SCOPE_CONNECT_WRITE",
+    "SCOPE_COMMUNITY_COURSE_WRITE",
+    "SCOPE_CONNECT_MCT_DAILY_LOG_READ",
+    "SCOPE_CONNECT_API_CREATE_UPDATE_USER",
+    "SCOPE_MESSAGE_GENERATION_READ",
+    "SCOPE_DI_OAUTH_2_CLIENT_REVOCATION_ADMIN",
+    "SCOPE_CONNECT_WEB_TEMPLATE_RENDER",
+    "SCOPE_ACTIVITY_DETECTION_READ",
+    "SCOPE_OMT_SUBSCRIPTION_ADMIN_READ",
+    "SCOPE_DI_OAUTH_2_MANAGED_STATUS_ADMIN_WRITE",
+    "SCOPE_CONNECT_NON_SOCIAL_SHARED_READ",
+    "SCOPE_CONNECT_READ",
+    "SCOPE_DI_OAUTH_2_PRERELEASE_PERMISSIONS_ADMIN_WRITE",
+    "SCOPE_DI_OAUTH_2_TOKEN_ADMIN",
+    "SCOPE_ATP_WRITE",
+    "ROLE_CONNECTUSER",
+    "ROLE_FITNESS_USER",
+    "ROLE_WELLNESS_USER",
+    "ROLE_OUTDOOR_USER",
+    "ROLE_GARMIN_USER"
+  ],
+  "vigorousIntensityMinutes": 16,
+  "waterEstimated": 115
+}
+
+
+
+============================================================
+ TABLE: ACTIVITY_TYPES
+============================================================
+FIELDS:
+  - type_id
+  - type_key
+  - parent_type_id
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "isHidden": false,
+  "parentTypeId": 17,
+  "restricted": false,
+  "trimmable": true,
+  "typeId": 1,
+  "typeKey": "running"
+}
+
+
+
+============================================================
+ TABLE: TRAINING_READINESS
+============================================================
+FIELDS:
+  - calendar_date
+  - score
+  - level
+  - feedback_short
+  - feedback_long
+  - recovery_time
+  - recovery_time_factor_percent
+  - recovery_time_factor_feedback
+  - hrv_factor_percent
+  - hrv_factor_feedback
+  - hrv_weekly_average
+  - sleep_history_factor_percent
+  - sleep_history_factor_feedback
+  - stress_history_factor_percent
+  - stress_history_factor_feedback
+  - acwr_factor_percent
+  - acwr_factor_feedback
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+  [Column exists, but no data found]
+
+
+
+============================================================
+ TABLE: HRV
+============================================================
+FIELDS:
+  - calendar_date
+  - weekly_avg
+  - last_night
+  - last_night_avg
+  - last_night_5min_high
+  - status
+  - baseline_low
+  - baseline_upper
+  - start_timestamp
+  - end_timestamp
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "heartRateVariabilityScalar": null
+}
+
+
+
+============================================================
+ TABLE: VO2MAX
+============================================================
+FIELDS:
+  - calendar_date
+  - sport
+  - value
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+  [Column exists, but no data found]
+
+
+
+============================================================
+ TABLE: WEIGHT
+============================================================
+FIELDS:
+  - calendar_date
+  - weight
+  - bmi
+  - body_fat
+  - body_water
+  - bone_mass
+  - muscle_mass
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "bmi": 23.7,
+  "bodyFat": 23.4,
+  "bodyWater": 55.9,
+  "boneMass": 4750,
+  "caloricIntake": null,
+  "date": 1744016614000,
+  "metabolicAge": null,
+  "muscleMass": 33130,
+  "physiqueRating": null,
+  "sourceType": "INDEX_SCALE",
+  "timestampGMT": 1744013014000,
+  "version": 1744013029776,
+  "visceralFat": null,
+  "weight": 77629,
+  "weightDelta": 299
+}
+
+
+
+============================================================
+ TABLE: BLOOD_PRESSURE
+============================================================
+FIELDS:
+  - calendar_date
+  - systolic
+  - diastolic
+  - pulse
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "category": "NORMAL",
+  "categoryName": "NORMAL",
+  "diastolic": 76,
+  "measurementTimestampGMT": "2024-05-07T09:05:04.0",
+  "measurementTimestampLocal": "2024-05-07T10:05:04.0",
+  "multiMeasurement": false,
+  "notes": null,
+  "pulse": null,
+  "sourceType": "MANUAL",
+  "systolic": 108,
+  "version": 1715072717461
+}
+
+
+
+============================================================
+ TABLE: CALORIES
+============================================================
+FIELDS:
+  - calendar_date
+  - total
+  - active
+  - bmr
+  - consumed
+  - remaining
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+  [Column exists, but no data found]
+
+
+
+============================================================
+ TABLE: SLEEP_STATS
+============================================================
+FIELDS:
+  - calendar_date
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+  [Column exists, but no data found]
+
+
+
+============================================================
+ TABLE: HEALTH_SNAPSHOT
+============================================================
+FIELDS:
+  - calendar_date
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "activityName": "Health Snapshot - Morning",
+  "activityUuid": {
+    "uuid": "107f00af-25e3-42f2-81f0-3c0750059e6c"
+  },
+  "calendarDate": "2026-02-06",
+  "deviceMetaData": {
+    "deviceId": 3465836046,
+    "deviceName": "Venu 2S",
+    "deviceTypeId": 36832,
+    "deviceVersion": "19.05",
+    "deviceVersionId": 979009
+  },
+  "endTimestampGMT": "2026-02-06T07:17:16.30",
+  "endTimestampLocal": "2026-02-06T07:17:16.30",
+  "notes": null,
+  "rulePK": 2,
+  "startTimestampGMT": "2026-02-06T07:15:16.0",
+  "startTimestampLocal": "2026-02-06T07:15:16.0",
+  "summaryTypeDataList": [
+    {
+      "avgValue": 70,
+      "maxValue": 74,
+      "minValue": 67,
+      "summaryType": "HEART_RATE"
+    },
+    {
+      "avgValue": 14.869999885559082,
+      "maxValue": 15.529999732971191,
+      "minValue": 13.529999732971191,
+      "summaryType": "RESPIRATION"
+    },
+    {
+      "avgValue": 25,
+      "maxValue": 29,
+      "minValue": 18,
+      "summaryType": "STRESS"
+    },
+    {
+      "avgValue": 97,
+      "maxValue": 98,
+      "minValue": 95,
+      "summaryType": "SPO2"
+    },
+    {
+      "avgValue": 20,
+      "summaryType": "RMSSD_HRV"
+    },
+    {
+      "avgValue": 30,
+      "summaryType": "SDRR_HRV"
+    }
+  ],
+  "timeInZoneList": [
+    {
+      "millisInZone": 120000,
+      "zoneLowBoundary": 0,
+      "zoneNumber": 0
+    },
+    {
+      "millisInZone": 0,
+      "zoneLowBoundary": 94,
+      "zoneNumber": 1
+    },
+    {
+      "millisInZone": 0,
+      "zoneLowBoundary": 113,
+      "zoneNumber": 2
+    },
+    {
+      "millisInZone": 0,
+      "zoneLowBoundary": 132,
+      "zoneNumber": 3
+    },
+    {
+      "millisInZone": 0,
+      "zoneLowBoundary": 150,
+      "zoneNumber": 4
+    },
+    {
+      "millisInZone": 0,
+      "zoneLowBoundary": 169,
+      "zoneNumber": 5
+    }
+  ],
+  "userProfilePk": 121521741,
+  "wellnessActivityType": "HEALTH_MONITORING"
+}
+
+
+
+============================================================
+ TABLE: WORKOUT_SCHEDULE
+============================================================
+FIELDS:
+  - calendar_date
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+  [Column exists, but no data found]
+
+
+
+============================================================
+ TABLE: WORKOUTS
+============================================================
+FIELDS:
+  - workout_id
+  - workout_name
+  - sport_type
+  - created_date
+  - updated_date
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+  [Column exists, but no data found]
+
+
+
+============================================================
+ TABLE: PERSONAL_RECORD
+============================================================
+FIELDS:
+  - id
+  - display_name
+  - activity_type
+  - pr_type
+  - value
+  - pr_date
+  - activity_id
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "actStartDateTimeInGMTFormatted": null,
+  "activityId": 0,
+  "activityName": null,
+  "activityStartDateTimeInGMT": null,
+  "activityStartDateTimeLocal": null,
+  "activityStartDateTimeLocalFormatted": null,
+  "activityType": null,
+  "id": 2417325241,
+  "poolLengthUnit": null,
+  "prStartTimeGmt": 1714414500000,
+  "prStartTimeGmtFormatted": "2024-04-29T18:15:00.0",
+  "prStartTimeLocal": 1714435200000,
+  "prStartTimeLocalFormatted": "2024-04-30T00:00:00.0",
+  "prTypeLabelKey": null,
+  "status": "ACCEPTED",
+  "typeId": 12,
+  "value": 39875
+}
+
+
+
+============================================================
+ TABLE: SQLITE_SEQUENCE
+============================================================
+FIELDS:
+  - name
+  - seq
+------------------------------------------------------------
+RAW_JSON:
+  [Column 'raw_json' does not exist in this table]
+
+
+
+============================================================
+ TABLE: DEVICE
+============================================================
+FIELDS:
+  - device_id
+  - display_name
+  - device_type
+  - application_key
+  - last_sync
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "abnormalHeartRateAlertCapable": false,
+  "accessorySensorCanGenerateActivityCapable": false,
+  "activeInd": 1,
+  "activityAutoDetectionCapable": false,
+  "activitySummFitFileCapable": false,
+  "actualProductSku": null,
+  "actualStepRecordingCapable": false,
+  "acuteChronicWorkloadRatioCapable": false,
+  "acuteTrainingLoadCapable": false,
+  "adaptiveCoachingFitnessCapable": false,
+  "adaptiveCoachingNoviceCapable": false,
+  "adaptiveCoachingScheduleCapable": false,
+  "adaptiveCoachingStrengthCapable": false,
+  "adaptiveCoachingStrengthReceiveCapable": false,
+  "adaptiveCoachingWalkCapable": false,
+  "adaptiveCoachingWorkoutSettingsCapable": false,
+  "aerobicTrainingEffectCapable": false,
+  "airIntegrationCapable": false,
+  "alarmDaysCapable": false,
+  "allDayStressCapable": false,
+  "altitudeAcclimationPercentageCapable": false,
+  "anaerobicTrainingEffectCapable": false,
+  "appSupport": false,
+  "applicationKey": "IndexSmartScale2",
+  "archeryXCapable": false,
+  "assistancePlusCapable": false,
+  "atpWorkoutCapable": false,
+  "batteryStatusCapable": false,
+  "bbiRecordingCapable": false,
+  "beaconTrackingCapable": false,
+  "benchmarkExerciseCapable": false,
+  "bestInClassVideoLink": null,
+  "bloodPressureCapable": false,
+  "bluetoothClassicDevice": false,
+  "bluetoothLowEnergyDevice": true,
+  "bodyBatteryCapable": false,
+  "bodyBatteryTrueUpCapable": false,
+  "breathingDisruptionsCapable": false,
+  "brickWorkoutCapable": false,
+  "cardioCapable": false,
+  "cardioOptionCapable": false,
+  "cardioSportsCapable": false,
+  "cardioWorkoutCapable": false,
+  "cellularCapable": false,
+  "changeLogCapable": true,
+  "collapsibleControlMenuCapable": false,
+  "connectedGPSCapable": false,
+  "contactManagementCapable": false,
+  "corporateDevice": false,
+  "courseCapable": false,
+  "courseFileType": null,
+  "coursePlannerCapable": false,
+  "coursePromptCapable": false,
+  "criticalSwimSpeedCapable": false,
+  "currentFirmwareVersion": "3.30",
+  "currentFirmwareVersionMajor": 3,
+  "currentFirmwareVersionMinor": 30,
+  "customIntensityMinutesCapable": false,
+  "customWorkoutCapable": false,
+  "cyclingAbilityCapable": false,
+  "cyclingComputerBackupRestoreCapable": false,
+  "cyclingHeartRateZoneCapable": false,
+  "cyclingPowerZonesCapable": true,
+  "cyclingSegmentCapable": false,
+  "cyclingSportsCapable": false,
+  "cyclingWorkoutCapable": false,
+  "datasource": "C",
+  "dayOfWeekSleepWindowCapable": false,
+  "defaultHeartRateZoneCapable": true,
+  "defaultSettingCapable": false,
+  "defaultSettingsHbaseMigrated": false,
+  "descriptiveTrainingEffectCapable": false,
+  "deviceCategories": [
+    "WELLNESS"
+  ],
+  "deviceEmbedVideoLink": null,
+  "deviceId": 1051482263,
+  "deviceSettingCapable": false,
+  "deviceSettingFileType": null,
+  "deviceSettingsFile": "Index2_385e1322-3e59-4b60-b63d-55fc13249a0b.json",
+  "deviceStatus": "active",
+  "deviceTags": null,
+  "deviceTypePk": 36742,
+  "deviceTypeSimpleName": null,
+  "deviceVideoPageLink": null,
+  "displayFieldsExtCapable": false,
+  "displayName": "Index S2",
+  "displayOrder": 0,
+  "diveAlertCapable": false,
+  "diveAppSyncCapable": false,
+  "divingCapable": false,
+  "ecgCapable": false,
+  "ellipticalOptionCapable": false,
+  "emergencyCallingCapable": false,
+  "enhancedWorkoutStepCapable": false,
+  "fallDetectionCapable": false,
+  "fitnessAgeV2Capable": false,
+  "fixedLocationCapable": false,
+  "floorsClimbedGoalCapable": false,
+  "ftpCapable": false,
+  "fullNameSettingsCapable": false,
+  "garminEpicsCapable": false,
+  "garminWellnessCoachCapable": false,
+  "gcj02CourseCapable": false,
+  "gcmSettingsFile": null,
+  "gearTrackingCapable": false,
+  "glonassCapable": false,
+  "goalCapable": false,
+  "goalFileType": "FIT",
+  "golfAppPairingCapable": false,
+  "golfAppSyncCapable": false,
+  "golfCourseDownloadCapable": false,
+  "golfDisplayOrder": 0,
+  "golfLiveScoringCapable": false,
+  "gpsRouteCapable": false,
+  "groupTrack2Capable": false,
+  "handednessCapable": false,
+  "hasOpticalHeartRate": false,
+  "hasPowerButton": false,
+  "healthSnapshotCapable": false,
+  "healthStatusCapable": false,
+  "healthStatusTrueUpCapable": false,
+  "heatAndAltitudeAcclimationCapable": false,
+  "hideSoftwareUpdateVersionCapable": false,
+  "highlighted": false,
+  "hiitWorkoutCapable": false,
+  "hillScoreAndEnduranceScoreCapable": false,
+  "hrZoneCapable": false,
+  "hrvStatusCapable": false,
+  "hrvStressCapable": false,
+  "hybrid": false,
+  "imageUrl": "https://s3.amazonaws.com/garmin-connect-prod/profile_images/5cf9472e-e92e-4e64-8932-527378abf804-71.png",
+  "inReachServicesCapable": false,
+  "incidentDetectionCapable": false,
+  "incompatibleApplications": [],
+  "indoorBikeOptionsCapable": false,
+  "indoorTrackOptionsCapable": false,
+  "indoorWalkOptionsCapable": false,
+  "intensityMinutesGoalCapable": false,
+  "intensityMinutesV2Capable": false,
+  "isPrimaryUser": false,
+  "jetlagCapable": false,
+  "lactateThresholdCapable": false,
+  "languageSettingCapable": false,
+  "languageSettingFileType": null,
+  "lapByCoursePointsCapable": false,
+  "launchMonitorEventSharingCapable": false,
+  "lhaBackupCapable": false,
+  "lifestyleLoggingCapable": false,
+  "liveTrackCapable": false,
+  "localWindConditionsCapable": false,
+  "lowHrAlertCapable": false,
+  "lteLiveEventSharingCapable": false,
+  "maxHRCapable": false,
+  "maxWorkoutCount": 0,
+  "measurementUnitSettingCapable": false,
+  "metricsFitFileReceiveCapable": false,
+  "metricsUploadCapable": false,
+  "militaryTimeCapable": false,
+  "minGCMAndroidVersion": 4200,
+  "minGCMHarmonyVersion": 99999,
+  "minGCMWindowsVersion": 99999,
+  "minGCMiOSVersion": 640,
+  "minGolfAppAndroidVersion": 99999,
+  "minGolfAppiOSVersion": 99999,
+  "mobilityWorkoutCapable": false,
+  "moderateIntensityMinutesGoalCapable": false,
+  "multipleGolfCourseCapable": false,
+  "multisportWorkoutCapable": false,
+  "nfcCapable": false,
+  "onDeviceSleepCalculationCapable": false,
+  "openWaterSwimOptionCapable": false,
+  "openWaterSwimWorkoutCapable": false,
+  "otherAssociation": false,
+  "otherOptionCapable": false,
+  "otherSportsCapable": false,
+  "pacebandCapable": false,
+  "partNumber": "006-B3461-00",
+  "passcodeLockCapable": false,
+  "pendingActivityCapable": false,
+  "personalRecordCapable": false,
+  "personalRecordFileType": null,
+  "personalRepRecordCapable": false,
+  "phoneVerificationCheckRequired": false,
+  "pilatesWorkoutCapable": false,
+  "poolSwimOptionCapable": false,
+  "powerCurveCapable": false,
+  "powerGuidanceCapable": false,
+  "powerZonesCapable": true,
+  "prePairedWithHRM": false,
+  "primary": true,
+  "primaryActivityTrackerIndicator": false,
+  "primaryActivityTrackerSettingCapable": false,
+  "primaryApplication": "GCM",
+  "primaryTrainingBackupCapable": false,
+  "primaryTrainingCapable": false,
+  "productDisplayName": "Index\u2122 S2 Smart Scale",
+  "productSku": null,
+  "projectedRaceTimePredictionCapable": false,
+  "publicBetaSoftwareCapable": false,
+  "pulseOxAllDayCapable": false,
+  "pulseOxOnDemandCapable": false,
+  "pulseOxSleepCapable": false,
+  "racePredictionsRunCapable": false,
+  "realTimeSettingsCapable": false,
+  "rechargeableSensorCapable": false,
+  "registeredDate": 1751834655000,
+  "registrationMetricsBackfillUnsupported": false,
+  "remCapable": false,
+  "reminderAlarmCapable": false,
+  "reorderablePagesCapable": true,
+  "requiresInitialDeviceNickname": false,
+  "respirationCapable": false,
+  "restingHRCapable": false,
+  "rideOptionsCapable": false,
+  "rowingCapable": false,
+  "rts20Capable": false,
+  "runOptionIndoorCapable": false,
+  "runOptionsCapable": false,
+  "runningEconomyCapable": false,
+  "runningHeartRateZoneCapable": false,
+  "runningLactateThresholdCapable": false,
+  "runningPowerZonesCapable": false,
+  "runningSegmentCapable": false,
+  "runningSportsCapable": false,
+  "runningToleranceCapable": false,
+  "runningWorkoutCapable": false,
+  "scheduleCapable": false,
+  "scheduleFileType": null,
+  "secondaryWorkoutStepTargetCapable": false,
+  "segmentCapable": false,
+  "segmentPointCapable": false,
+  "serialNumber": "6EU552079",
+  "serverOnlyDSWRecalculationCapable": false,
+  "setBodyCompositionCapable": true,
+  "settingCapable": true,
+  "settingFileType": "FIT",
+  "shortName": null,
+  "skipLastWorkoutStepInRepeatBlockCapable": false,
+  "sleepAlignmentCapable": false,
+  "sleepFitFileReceiveCapable": false,
+  "sleepNeedCapable": false,
+  "sleepScoreCapable": false,
+  "sleepSkinTemperatureCapable": false,
+  "sleepTimeCapable": false,
+  "smallFitFileOnlyCapable": false,
+  "solarChargeCapable": false,
+  "solarPanelUtilizationCapable": false,
+  "spectatorMessagingCapable": false,
+  "sportCapable": false,
+  "sportFileType": null,
+  "sportingEventCapable": false,
+  "stairStepperOptionCapable": false,
+  "standaloneFirstbeatActivityProcessingCapable": false,
+  "startActivityCapable": false,
+  "startStopWorkoutCapable": false,
+  "stepsTrueUpChartCapable": false,
+  "strengthOptionsCapable": false,
+  "strengthTrainingPlanCapable": false,
+  "strengthWorkoutCapable": false,
+  "supportedHrZones": [
+    "ALL"
+  ],
+  "supportsSecondaryUsers": true,
+  "sweatLossCapable": false,
+  "swimAlgorithmCapable": false,
+  "swimWorkout2Capable": false,
+  "swimWorkoutCapable": false,
+  "swimmingHeartRateZoneCapable": false,
+  "syncActivityEditsCapable": false,
+  "topoactiveMapsRealTimeSettingCapable": false,
+  "trainableTriathlonEventCapable": false,
+  "trainingEffectLabelCapable": false,
+  "trainingLoadBalanceCapable": false,
+  "trainingPlanCapable": false,
+  "trainingReadinessCapable": false,
+  "trainingStatusCapable": false,
+  "trainingStatusPauseCapable": false,
+  "unRetirable": false,
+  "unitId": 1051482263,
+  "userProfileCapable": false,
+  "userProfileFileType": null,
+  "userTcxExportCapable": false,
+  "vbtCapable": false,
+  "vivohubCompatible": false,
+  "vivohubConfigurable": null,
+  "vo2MaxBikeCapable": false,
+  "vo2MaxRunCapable": false,
+  "walkOptionCapable": false,
+  "walkWorkoutCapable": false,
+  "walkingSportsCapable": false,
+  "wasp": false,
+  "wearableBackupRestoreCapable": false,
+  "weatherAlertsCapable": false,
+  "weatherSettingsCapable": false,
+  "weightGoalCapable": true,
+  "weightScale": true,
+  "wellness": false,
+  "wheelchairCapable": false,
+  "wifi": true,
+  "wifiSetup": false,
+  "workoutAudioPromptsCapable": false,
+  "workoutCapable": false,
+  "workoutFileType": null,
+  "xcSkiPowerZonesCapable": false,
+  "yogaCapable": false,
+  "yogaOptionCapable": false,
+  "yogaWorkoutCapable": false
+}
+
+
+
+============================================================
+ TABLE: GEAR
+============================================================
+FIELDS:
+  - gear_id
+  - gear_type
+  - display_name
+  - brand
+  - model
+  - date_begin
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+  [Column exists, but no data found]
+
+
+
+============================================================
+ TABLE: GOALS
+============================================================
+FIELDS:
+  - goal_id
+  - goal_type
+  - goal_value
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+  [Column exists, but no data found]
+
+
+
+============================================================
+ TABLE: CHALLENGES
+============================================================
+FIELDS:
+  - id
+  - challenge_type
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+  [Column exists, but no data found]
+
+
+
+============================================================
+ TABLE: TRAINING_PLANS
+============================================================
+FIELDS:
+  - id
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "searchFilter": {
+    "allowedPrivacyList": null,
+    "limit": 50,
+    "locale": null,
+    "ownerDisplayName": null,
+    "ownerId": 121521741,
+    "planKey": false,
+    "start": 1,
+    "trainingLevels": null,
+    "trainingStatusList": [],
+    "trainingSubTypes": null,
+    "trainingTypes": null,
+    "trainingVersions": null
+  },
+  "trainingPlanList": []
+}
+
+
+
+============================================================
+ TABLE: HR_ZONES
+============================================================
+FIELDS:
+  - id
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "changeState": "UNCHANGED",
+  "lactateThresholdHeartRateUsed": null,
+  "maxHeartRateUsed": 188,
+  "restingHeartRateUsed": 63,
+  "restingHrAutoUpdateUsed": false,
+  "sport": "DEFAULT",
+  "trainingMethod": "HR_MAX",
+  "zone1Floor": 94,
+  "zone2Floor": 113,
+  "zone3Floor": 132,
+  "zone4Floor": 150,
+  "zone5Floor": 169
+}
+
+
+
+============================================================
+ TABLE: USER_PROFILE
+============================================================
+FIELDS:
+  - key
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "biometricProfile": {
+    "activityClass": 5,
+    "criticalSwimSpeed": null,
+    "functionalThresholdPower": null,
+    "height": 181,
+    "lactateThresholdHeartRate": null,
+    "userId": 121521741,
+    "vo2Max": 41,
+    "vo2MaxCycling": null,
+    "vo2MaxRowing": null,
+    "weight": 79459
+  },
+  "birthDate": "1991-11-16",
+  "gender": "MALE",
+  "locale": "en",
+  "timeZone": "Europe/London",
+  "userInfo": {
+    "age": 34,
+    "birthDate": "1991-11-16",
+    "countryCode": "GB",
+    "email": "jjbuckley.91@gmail.com",
+    "genderType": "MALE",
+    "locale": "en",
+    "timeZone": "Europe/London"
+  }
+}
+
+
+
+============================================================
+ TABLE: ENDURANCE_SCORE
+============================================================
+FIELDS:
+  - calendar_date
+  - overall_score
+  - classification
+  - vo2_max
+  - vo2_max_precise
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+  [Column exists, but no data found]
+
+
+
+============================================================
+ TABLE: HILL_SCORE
+============================================================
+FIELDS:
+  - calendar_date
+  - overall_score
+  - endurance_score
+  - strength_score
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+  [Column exists, but no data found]
+
+
+
+============================================================
+ TABLE: RACE_PREDICTIONS
+============================================================
+FIELDS:
+  - calendar_date
+  - time_5k
+  - time_10k
+  - time_half_marathon
+  - time_marathon
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+  [Column exists, but no data found]
+
+
+
+============================================================
+ TABLE: ACTIVITY_SPLITS
+============================================================
+FIELDS:
+  - activity_id
+  - split_number
+  - distance_meters
+  - duration_seconds
+  - average_speed
+  - average_hr
+  - max_hr
+  - elevation_gain
+  - elevation_loss
+  - avg_cadence
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "averageHR": 127,
+  "averageSpeed": 0,
+  "bmrCalories": 30,
+  "calories": 180,
+  "connectIQMeasurement": [],
+  "distance": 0,
+  "duration": 1221.207,
+  "elapsedDuration": 1221.207,
+  "lapIndex": 1,
+  "lengthDTOs": [],
+  "maxHR": 149,
+  "messageIndex": 0,
+  "movingDuration": 0,
+  "startTimeGMT": "2026-04-08T11:58:14.0"
+}
+
+
+
+============================================================
+ TABLE: ACTIVITY_HR_ZONES
+============================================================
+FIELDS:
+  - activity_id
+  - zone1_seconds
+  - zone2_seconds
+  - zone3_seconds
+  - zone4_seconds
+  - zone5_seconds
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+[
+  {
+    "secsInZone": 33.006,
+    "zoneLowBoundary": 93,
+    "zoneNumber": 1
+  },
+  {
+    "secsInZone": 54.63,
+    "zoneLowBoundary": 111,
+    "zoneNumber": 2
+  },
+  {
+    "secsInZone": 358.999,
+    "zoneLowBoundary": 130,
+    "zoneNumber": 3
+  },
+  {
+    "secsInZone": 233.001,
+    "zoneLowBoundary": 148,
+    "zoneNumber": 4
+  },
+  {
+    "secsInZone": 351.998,
+    "zoneLowBoundary": 167,
+    "zoneNumber": 5
+  }
+]
+
+
+
+============================================================
+ TABLE: ACTIVITY_WEATHER
+============================================================
+FIELDS:
+  - activity_id
+  - temperature
+  - apparent_temperature
+  - humidity
+  - wind_speed
+  - wind_direction
+  - weather_type
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "apparentTemp": null,
+  "dewPoint": null,
+  "issueDate": null,
+  "latitude": 0,
+  "longitude": 0,
+  "relativeHumidity": null,
+  "temp": null,
+  "weatherStationDTO": null,
+  "weatherTypeDTO": null,
+  "windDirection": null,
+  "windDirectionCompassPoint": null,
+  "windGust": null,
+  "windSpeed": null
+}
+
+
+
+============================================================
+ TABLE: ACTIVITY_EXERCISE_SETS
+============================================================
+FIELDS:
+  - activity_id
+  - set_number
+  - exercise_name
+  - exercise_category
+  - reps
+  - weight
+  - duration_seconds
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "activityId": 22452156736,
+  "exerciseSets": null
+}
+
+
+
+============================================================
+ TABLE: EARNED_BADGES
+============================================================
+FIELDS:
+  - badge_id
+  - badge_key
+  - badge_name
+  - badge_category
+  - earned_date
+  - earned_number
+  - raw_json
+------------------------------------------------------------
+RAW_JSON SAMPLE (1 Row):
+{
+  "badgeAssocDataId": "14995602075",
+  "badgeAssocDataName": null,
+  "badgeAssocType": "activityId",
+  "badgeAssocTypeId": 1,
+  "badgeCategoryId": 1,
+  "badgeChallengeStatusId": null,
+  "badgeDifficultyId": 1,
+  "badgeEarnedDate": "2024-04-20T18:14:53.0",
+  "badgeEarnedNumber": 1,
+  "badgeEndDate": null,
+  "badgeId": 3,
+  "badgeIsViewed": true,
+  "badgeKey": "activity_time_night",
+  "badgeLimitCount": null,
+  "badgeName": "I Am the Night",
+  "badgePoints": 1,
+  "badgeProgressValue": 0,
+  "badgePromotionCodeTypeList": [
+    null
+  ],
+  "badgeSeriesId": 2,
+  "badgeStartDate": "2018-04-03T00:00:00.0",
+  "badgeTargetValue": null,
+  "badgeTypeIds": [
+    1
+  ],
+  "badgeUnitId": null,
+  "badgeUuid": null,
+  "createDate": "2024-04-20T18:22:54.736",
+  "currentPlayerType": null,
+  "displayName": "82b83a61-da96-4774-b7fd-1fb773f8ce1a",
+  "earnedByMe": true,
+  "fullName": "James Buckley",
+  "premium": false,
+  "promotionCodeStatus": null,
+  "relatedBadges": null,
+  "userJoined": null,
+  "userProfileId": 121521741
+}
+
+
+
+============================================================
+ TABLE: SYNC_LOG
+============================================================
+FIELDS:
+  - id
+  - sync_date
+  - sync_type
+  - records_upserted
+  - status
+  - error
+  - created_at
+------------------------------------------------------------
+RAW_JSON:
+  [Column 'raw_json' does not exist in this table]
+
+
+
+============================================================
+Inspection complete!
