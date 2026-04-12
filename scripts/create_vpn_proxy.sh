@@ -40,7 +40,7 @@ else
 fi
 
 echo "Waiting for instance to fully boot and SSH keys to propagate (may take up to 30 seconds)..."
-sleep 15
+sleep 30
 
 echo "2. Opening SOCKS5 Proxy..."
 echo "========================================================"
@@ -49,7 +49,7 @@ echo "Press Ctrl+C to terminate the proxy and automatically clean up the instanc
 echo ""
 echo "INSTRUCTIONS:"
 echo "1. Configure your local web browser or system proxy to use SOCKS5 on 127.0.0.1:1080"
-echo "   (If using Chrome, you can launch it with: chrome --proxy-server=\"socks5://localhost:1080\")"
+echo "   (If using Chrome, you can launch it with: chrome.exe --proxy-server="socks5://localhost:1080" --user-data-dir="%temp%\proxy_chrome")"
 echo "2. Verify your IP: go to https://ifconfig.me in that browser and verify it matches your GCP James Static IP."
 echo "3. Run your initial garmin-givemydata python login script."
 echo "4. After successful login (CAPTCHA solved) and extraction finishes, upload your local /browser_profile and /garmin.db to GCS."

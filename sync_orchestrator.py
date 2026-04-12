@@ -2,6 +2,7 @@ import os
 import sys
 import subprocess
 import logging
+import argparse
 from google.cloud import storage, bigquery
 import glob
 import pandas as pd
@@ -81,22 +82,32 @@ def ingest_to_bigquery(bq_staging_dir):
             raise
 
 def main():
+    parser = argparse.ArgumentParser(description="Garmin Background Sync Orchestrator")
+    parser.add_argument("--skip-pull", action="store_true", help="Disable the initial pull of state from GCS")
+    args = parser.parse_args()
+
     logger.info("=== Starting Garmin Background Sync Orchestrator ===")
     os.makedirs(WORKSPACE_DIR, exist_ok=True)
     
     # 1. Pull current state (browser profile, existing SQLite db, .env)
-    pull_state_from_gcs()
+    if not args.skip_pull:
+        pull_state_from_gcs()
+    else:
+        logger.info("Skipping initial state pull from GCS due to --skip-pull argument.")
 
     # Determine paths based on where givemydata repo is evaluated
-    givemydata_entry = os.path.abspath("./givemydata_repo/garmin_givemydata.py")
+    givemydata_entry = os.path.abspath("./garmin_givemydata_repo/garmin_givemydata.py")
     if not os.path.exists(givemydata_entry):
         logger.warning(f"Cannot find extraction handler at {givemydata_entry}. Attempting to clone repository...")
         try:
-            subprocess.run("git clone https://github.com/nrvim/garmin-givemydata.git givemydata_repo", shell=True, check=True)
+            # -b dev tells git to clone and switch to the 'dev' branch
+            # The URL now points to your personal fork
+            subprocess.run("git clone -b dev https://github.com/JibbyJames/garmin-givemydata.git garmin_givemydata_repo", shell=True, check=True)
+            
             # Givemydata has specific dependencies we should probably ensure exist locally
-            subprocess.run("pip install -r givemydata_repo/requirements.txt", shell=True, check=True)
+            subprocess.run("pip install -r garmin_givemydata_repo/requirements.txt", shell=True, check=True)
         except Exception as e:
-            logger.error(f"Failed to clone repository: {e}")
+            logger.error(f"Failed to clone repository or install dependencies: {e}")
             return
 
     # 2. Extract Data using virtual framebuffer for selenium bypassing (only on Linux server)
@@ -116,9 +127,8 @@ def main():
         os.makedirs(bq_staging_dir, exist_ok=True)
         
         logger.info("Invoking data transformation to BQ staging (CSV exclusively)...")
-        import sys
         from pathlib import Path
-        repo_path = os.path.abspath("./givemydata_repo")
+        repo_path = os.path.abspath("./garmin_givemydata_repo")
         if repo_path not in sys.path:
             sys.path.insert(0, repo_path)
             

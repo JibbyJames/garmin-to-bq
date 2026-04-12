@@ -137,6 +137,12 @@ echo "Scheduling the Sync Job to run autonomously while you sleep."
 
 gcloud services enable cloudscheduler.googleapis.com
 
+echo "Granting the Service Account permission to invoke the Cloud Run job..."
+gcloud run jobs add-iam-policy-binding garmin-sync-job \
+    --region="$REGION" \
+    --member="serviceAccount:$SERVICE_ACCOUNT" \
+    --role="roles/run.invoker"
+
 if ! gcloud scheduler jobs describe garmin-daily-sync --location=$REGION 2>/dev/null; then
     gcloud scheduler jobs create http garmin-daily-sync \
         --location="$REGION" \

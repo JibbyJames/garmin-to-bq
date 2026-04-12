@@ -81,7 +81,7 @@ The extraction logic depends entirely on the [garmin-givemydata](https://github.
 - Data Sync
     - Export logic is missing many fields I require for the web app, so a custom SQLite querying task should be done instead
     - Use the db_inspection.txt to assist with how to query the database
-    - Find out where the "vo2max_trend" data is being populated in the database as there doesn't appear to be the same VO2 Max readings anywhere.
+    - There is a bug in the upsert_vo2max logic. Fork the repo and make the fix there. Possibly add sleep score to the sleep table here as well.
 
 - Misc
     - Remove X on main dashboard
