@@ -3,3 +3,5 @@ __pycache__
 .garminconnect
 exports/
 garmin_givemydata_repo/
+.venv/
+.venv
