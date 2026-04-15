@@ -3,8 +3,6 @@ FROM python:3.11-slim-bullseye
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
-ENV FLASK_APP=app.py
-ENV PORT=8080
 
 # Install OS dependencies for Chrome and Xvfb
 RUN apt-get update && apt-get install -y \
@@ -56,8 +54,5 @@ RUN chown -R appuser:appuser /home/appuser
 # Switch to the non-root user
 USER appuser
 
-# Expose the application port
-EXPOSE 8080
-
-# Run the web service on container startup using gunicorn
-CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 app:app
+# Run the orchestration script on container startup
+CMD ["python", "sync_orchestrator.py"]

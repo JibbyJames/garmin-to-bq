@@ -19,14 +19,21 @@ It is triggered on a daily cadence via **Google Cloud Scheduler**. State (e.g. S
 
 ## Web Application Dashboard
 
-This project runs a separate Flask web application on Google Cloud Run to provide a visual dashboard. It features a retro GameBoy UI, mobile PWA capabilities, and limits viewing access to specific users via Google OAuth.
+This project includes a fully static progressive web application (PWA) with a retro GameBoy UI that gets deployed to **Firebase Hosting**. The dashboard achieves near-instant load times by fetching aggregated daily statistics directly from a **Cloud Firestore** document cache populated efficiently during the BigQuery sync stage.
 
-### 1. Configure Google OAuth credentials
-To secure the dashboard, setup OAuth:
-1. Navigate to your Google Cloud Console **APIs & Services** > **Credentials**.
-2. Click **Create Credentials** > **OAuth client ID** (Web Application).
-3. Add an Authorized Redirect URI (e.g., `https://your-cloud-run-url.a.run.app/authorize`).
-4. Save the **Client ID** and **Client Secret** into Google Secret Manager as `garmin-google-oauth-client-id` and `garmin-google-oauth-secret`.
+### 1. Configure Firebase & Firestore
+Before deploying the web application, you must initialize Firebase within your GCP Project:
+1. Navigate to the [Firebase Console](https://console.firebase.google.com/) and add your existing GCP project (`james-gcp-project`).
+2. Go to **Build > Firestore Database** and click **Create Database** (Select your preferred region).
+3. Go to **Build > Authentication**, click **Get Started**, and enable the **Google** sign-in provider.
+
+### 2. Deploy Front-End
+From the root directory, ensure you have the `firebase-tools` CLI installed (`npm install -g firebase-tools`), and then deploy the static HTML and Firestore security rules:
+```bash
+firebase login
+firebase use --add james-gcp-project
+firebase deploy
+```
 
 ***
 
@@ -79,9 +86,7 @@ The extraction logic depends entirely on the [garmin-givemydata](https://github.
 ## TODO
 
 - Data Sync
-    - Export logic is missing many fields I require for the web app, so a custom SQLite querying task should be done instead
-    - Use the db_inspection.txt to assist with how to query the database
-    - There is a bug in the upsert_vo2max logic. Fork the repo and make the fix there. Possibly add sleep score to the sleep table here as well.
+    - Optimise the sync process by uploading only the tables used in the GBQ views currently.
 
 - Misc
     - Remove X on main dashboard

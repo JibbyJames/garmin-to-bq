@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Garmin OS</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#8bac0f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="/icon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+
+    <!-- Firebase SDKs -->
+    <script defer src="/__/firebase/10.8.1/firebase-app-compat.js"></script>
+    <script defer src="/__/firebase/10.8.1/firebase-auth-compat.js"></script>
+    <script defer src="/__/firebase/10.8.1/firebase-firestore-compat.js"></script>
+    <script defer src="/__/firebase/init.js"></script>
+</head>
+<body>
+    <div class="gb-container">
+        
+        <nav class="gb-nav" id="dashboard-nav" style="display: none;">
+            <div class="nav-links">
+                <a href="#kpis" class="active nav-tab" id="nav-kpis" onclick="switchTab('kpis-view', 'nav-kpis')">KPIs</a>
+                <a href="#week" class="nav-tab" id="nav-week" onclick="switchTab('week-view', 'nav-week')">WEEK</a>
+            </div>
+            <div class="nav-actions">
+                <button id="syncBtn" class="gb-btn icon-btn" title="Sync Status">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2v4.264C8.016 6.643 5 9.948 5 14H3c0-4.97 4.03-9 9-9V2l4.5 4-4.5 4zM12 22v-4.264c3.984-.379 7-3.684 7-7.736h2c0 4.97-4.03 9-9 9v3l-4.5-4 4.5-4z"/></svg>
+                </button>
+                <button id="logoutBtn" class="gb-btn icon-btn" title="Logout">X</button>
+            </div>
+        </nav>
+
+        <div class="gb-screen">
+            
+            <!-- LOGIN VIEW -->
+            <div id="login-view" class="login-container" style="display: none;">
+                <h1>GARMIN OS v1</h1>
+                <p>INSERT TOKEN</p>
+                <button id="loginBtn" class="gb-btn large-btn">AUTHORIZE</button>
+            </div>
+
+            <!-- KPIS VIEW -->
+            <div id="kpis-view" class="spa-view" style="display: none;">
+                <div class="kpi-controls">
+                    <button id="cycleBtn" class="gb-btn cycle-btn">VIEWING: <span id="currentView">AVERAGE</span></button>
+                </div>
+                <!-- Data populated dynamically via JS -->
+                <div class="grid-2x3" id="kpis-grid">
+                    <div style="text-align:center; grid-column: span 2;">LOADING...</div>
+                </div>
+            </div>
+
+            <!-- WEEK PROGRESS VIEW -->
+            <div id="week-view" class="spa-view" style="display: none;">
+                <h2 class="page-title">WEEK PROGRESS</h2>
+                <!-- Data populated dynamically via JS -->
+                <div class="list-1x4" id="week-grid">
+                    <div style="text-align:center;">LOADING...</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Sync Modal -->
+    <div id="syncModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>SYSTEM SYNC</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div id="syncLogs" class="logs">
+                <br>Manual sync via the UI is disabled.<br>The Cloud Run Sync Job executes daily via Cloud Scheduler.<br><br>SYNC RUNS ASYNCHRONOUSLY IN BACKGROUND.
+            </div>
+        </div>
+    </div>
+
+    <!-- Templates for Javascript population -->
+    <template id="kpi-card-template">
+        <div class="kpi-card">
+            <div class="kpi-header"></div>
+            
+            <div class="kpi-value view-latest">
+                <div class="val"></div>
+                <div class="kpi-date"></div>
+            </div>
+
+            <div class="kpi-value view-avg active">
+                <div class="val"></div>
+                <div class="diff"></div>
+            </div>
+
+            <div class="kpi-value view-min">
+                <div class="val"></div>
+                <div class="diff"></div>
+            </div>
+
+            <div class="kpi-value view-max">
+                <div class="val"></div>
+                <div class="diff"></div>
+            </div>
+        </div>
+    </template>
+
+    <template id="week-card-template">
+        <div class="progress-card">
+            <div class="progress-header">
+                <span class="goal-name"></span>
+                <span class="goal-units"></span>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar"></div>
+                <div class="progress-bar over-complete" style="display: none;"></div>
+            </div>
+            <div class="progress-footer"></div>
+        </div>
+    </template>
+
+    <script>
+        // SPA Tab Switching Logic
+        function switchTab(viewId, navId) {
+            document.querySelectorAll('.spa-view').forEach(el => el.style.display = 'none');
+            document.getElementById(viewId).style.display = 'block';
+            document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+            document.getElementById(navId).classList.add('active');
+        }
+
+        // Cycle Logic variables
+        const views = ['avg', 'latest', 'min', 'max'];
+        let currentViewIdx = 0;
+        
+        document.getElementById('cycleBtn').addEventListener('click', () => {
+            document.querySelectorAll('.view-' + views[currentViewIdx]).forEach(el => el.classList.remove('active'));
+            currentViewIdx = (currentViewIdx + 1) % views.length;
+            document.querySelectorAll('.view-' + views[currentViewIdx]).forEach(el => {
+                el.classList.add('active');
+                let card = el.closest('.kpi-card');
+                if(el.dataset.status === 'bad') {
+                    card.classList.add('kpi-bad');
+                } else {
+                    card.classList.remove('kpi-bad');
+                }
+            });
+            document.getElementById('currentView').innerText = views[currentViewIdx].toUpperCase();
+        });
+
+        // Modal logic
+        const syncBtn = document.getElementById('syncBtn');
+        const modal = document.getElementById('syncModal');
+        const closeBtn = document.querySelector('.close');
+        
+        if(syncBtn) {
+            syncBtn.onclick = () => modal.style.display = "flex";
+        }
+        if(closeBtn) {
+            closeBtn.onclick = () => modal.style.display = "none";
+        }
+
+        // Firebase & Data Logic
+        let db, auth;
+        document.addEventListener('DOMContentLoaded', () => {
+            // Wait for Firebase to inject elements if implicit
+            setTimeout(() => {
+                if (typeof firebase !== 'undefined') {
+                    auth = firebase.auth();
+                    db = firebase.firestore();
+
+                    auth.onAuthStateChanged(user => {
+                        if (user) {
+                            if (user.email !== "jjbuckley.91@gmail.com") {
+                                alert("Unauthorized user.");
+                                auth.signOut();
+                                return;
+                            }
+                            // Show Dashboard
+                            document.getElementById('login-view').style.display = 'none';
+                            document.getElementById('dashboard-nav').style.display = 'flex';
+                            switchTab('kpis-view', 'nav-kpis');
+                            
+                            loadData();
+                        } else {
+                            // Show Login
+                            document.getElementById('login-view').style.display = 'flex';
+                            document.getElementById('dashboard-nav').style.display = 'none';
+                            document.querySelectorAll('.spa-view').forEach(el => el.style.display = 'none');
+                        }
+                    });
+
+                    document.getElementById('loginBtn').addEventListener('click', () => {
+                        const provider = new firebase.auth.GoogleAuthProvider();
+                        auth.signInWithPopup(provider).catch(console.error);
+                    });
+
+                    document.getElementById('logoutBtn').addEventListener('click', () => {
+                        auth.signOut();
+                    });
+                }
+            }, 500); 
+        });
+
+        function checkBad(val, metric) {
+            if (!val || parseFloat(val) === 0) return 'neutral';
+            let is_lower_better = metric.includes('Stress') || metric.includes('Fat') || metric.includes('Age') || metric.includes('Weight') || metric.includes('Rate');
+            let is_negative = parseFloat(val) < 0;
+            let is_better = is_lower_better ? is_negative : !is_negative;
+            return is_better ? 'good' : 'bad';
+        }
+
+        function buildDiffString(val) {
+            if (!val) return "- 0%";
+            let n = parseFloat(val);
+            if (n > 0) return "▲ " + val + "%";
+            if (n < 0) return "▼ " + val + "%";
+            return "- " + val + "%";
+        }
+
+        async function loadData() {
+            try {
+                // Fetch KPIs
+                const kpiDoc = await db.collection('garmin').doc('health_kpis').get();
+                if (kpiDoc.exists) {
+                    renderKPIs(kpiDoc.data().data || []);
+                }
+                
+                // Fetch Week Progress
+                const weekDoc = await db.collection('garmin').doc('week_progress').get();
+                if (weekDoc.exists) {
+                    renderWeek(weekDoc.data().data || []);
+                }
+            } catch (e) {
+                console.error("Error loading data from Firestore: ", e);
+            }
+        }
+
+        function renderKPIs(data) {
+            const grid = document.getElementById('kpis-grid');
+            grid.innerHTML = ''; // clear loading
+            const tmpl = document.getElementById('kpi-card-template');
+
+            data.forEach(item => {
+                let clone = tmpl.content.cloneNode(true);
+                let card = clone.querySelector('.kpi-card');
+                
+                let avg_status = checkBad(item.pct_diff_avg, item.metric);
+                if(avg_status === 'bad') card.classList.add('kpi-bad');
+
+                clone.querySelector('.kpi-header').textContent = item.metric;
+                
+                // Latest
+                clone.querySelector('.view-latest .val').textContent = item.current_latest;
+                clone.querySelector('.view-latest .kpi-date').textContent = item.current_latest_date || '';
+
+                // Avg
+                clone.querySelector('.view-avg').dataset.status = avg_status;
+                clone.querySelector('.view-avg .val').textContent = item.current_avg;
+                let avgDiff = clone.querySelector('.view-avg .diff');
+                avgDiff.textContent = buildDiffString(item.pct_diff_avg);
+                if (parseFloat(item.pct_diff_avg) > 0) avgDiff.classList.add('up');
+                else if (parseFloat(item.pct_diff_avg) < 0) avgDiff.classList.add('down');
+
+                // Min
+                let min_status = checkBad(item.pct_diff_min, item.metric);
+                clone.querySelector('.view-min').dataset.status = min_status;
+                clone.querySelector('.view-min .val').textContent = item.current_min;
+                let minDiff = clone.querySelector('.view-min .diff');
+                minDiff.textContent = buildDiffString(item.pct_diff_min);
+                if (parseFloat(item.pct_diff_min) > 0) minDiff.classList.add('up');
+                else if (parseFloat(item.pct_diff_min) < 0) minDiff.classList.add('down');
+
+                // Max
+                let max_status = checkBad(item.pct_diff_max, item.metric);
+                clone.querySelector('.view-max').dataset.status = max_status;
+                clone.querySelector('.view-max .val').textContent = item.current_max;
+                let maxDiff = clone.querySelector('.view-max .diff');
+                maxDiff.textContent = buildDiffString(item.pct_diff_max);
+                if (parseFloat(item.pct_diff_max) > 0) maxDiff.classList.add('up');
+                else if (parseFloat(item.pct_diff_max) < 0) maxDiff.classList.add('down');
+
+                grid.appendChild(clone);
+            });
+            // Ensure proper tab visibility logic applied to newly rendered objects
+            let activeView = views[currentViewIdx];
+            document.querySelectorAll('.kpi-value').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.view-' + activeView).forEach(el => el.classList.add('active'));
+        }
+
+        function renderWeek(data) {
+            const grid = document.getElementById('week-grid');
+            grid.innerHTML = '';
+            const tmpl = document.getElementById('week-card-template');
+
+            data.forEach(item => {
+                let clone = tmpl.content.cloneNode(true);
+                
+                clone.querySelector('.goal-name').textContent = item.goal_name + ":";
+                let unit = (item.goal_name.includes('Cardio') || item.goal_name.includes('Sauna') || item.goal_name.includes('Minutes')) ? 'minutes' : 'sessions';
+                clone.querySelector('.goal-units').textContent = `${Math.round(item.progress)} / ${Math.round(item.target)} ${unit}`;
+
+                let pct = parseFloat(item.percentage) * 100;
+                let p1 = clone.querySelectorAll('.progress-bar')[0];
+                let p2 = clone.querySelectorAll('.progress-bar')[1];
+
+                p1.style.width = (pct <= 100 ? pct : 100) + '%';
+                if (pct >= 100) p1.classList.add('complete');
+
+                if (pct > 100) {
+                    p2.style.display = 'block';
+                    p2.style.width = (pct - 100 <= 100 ? pct - 100 : 100) + '%';
+                }
+
+                clone.querySelector('.progress-footer').textContent = item.last_recorded ? "Last: " + item.last_recorded : "No records yet";
+
+                grid.appendChild(clone);
+            });
+        }
+    </script>
+</body>
+</html>

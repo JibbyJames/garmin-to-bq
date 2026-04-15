@@ -71,17 +71,14 @@ fi
 
 echo ""
 echo "=========================================================="
-echo "2. Deploying Web Application Dashboard"
+echo "2. Deploying Static Web Dashboard (Firebase)"
 echo "=========================================================="
-echo "We are deploying the interactive retro GameBoy UI as a completely independent"
-echo "public-facing Cloud Run Service. It reads directly from BigQuery."
-
-gcloud run deploy garmin-os \
-  --source . \
-  --region $REGION \
-  --service-account "$SERVICE_ACCOUNT" \
-  --allow-unauthenticated
-
+echo "We have migrated the front-end to Firebase Hosting and Firestore."
+echo "Deploy the UI using the Firebase CLI:"
+echo "  firebase use --add $PROJECT_ID"
+echo "  firebase deploy"
+echo "NOTE: You must manually enable Firebase Auth (Google Sign-In) and Firestore"
+echo "via the Firebase Console before you deploy."
 
 echo ""
 echo "=========================================================="
@@ -146,7 +143,7 @@ gcloud run jobs add-iam-policy-binding garmin-sync-job \
 if ! gcloud scheduler jobs describe garmin-daily-sync --location=$REGION 2>/dev/null; then
     gcloud scheduler jobs create http garmin-daily-sync \
         --location="$REGION" \
-        --schedule="0 3 * * *" \
+        --schedule="0 9,22 * * *" \
         --time-zone="Europe/London" \
         --uri="https://${REGION}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${PROJECT_ID}/jobs/garmin-sync-job:run" \
         --http-method="POST" \

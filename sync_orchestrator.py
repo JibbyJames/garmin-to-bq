@@ -3,9 +3,19 @@ import sys
 import subprocess
 import logging
 import argparse
-from google.cloud import storage, bigquery
+from google.cloud import storage, bigquery, firestore
 import glob
 import pandas as pd
+import datetime
+
+def serialize_for_firestore(obj):
+    if isinstance(obj, dict):
+        return {k: serialize_for_firestore(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [serialize_for_firestore(v) for v in obj]
+    elif isinstance(obj, (datetime.date, datetime.datetime)):
+        return obj.isoformat()
+    return obj
 
 BQ_PROJECT = "james-gcp-project"
 BQ_DATASET = "garmin"
@@ -81,6 +91,36 @@ def ingest_to_bigquery(bq_staging_dir):
             logger.error(f"Error loading {csv_file}: {e}")
             raise
 
+def update_firestore_cache():
+    logger.info("Updating Firestore cache with latest BigQuery views...")
+    bq_client = bigquery.Client(project=BQ_PROJECT)
+    fs_client = firestore.Client(project=BQ_PROJECT)
+    
+    try:
+        # KPIs
+        query_kpis = f"SELECT * FROM `{BQ_PROJECT}.garmin.health_kpis`"
+        job_kpis = bq_client.query(query_kpis)
+        kpis_data = [serialize_for_firestore(dict(row)) for row in job_kpis.result()]
+        
+        fs_client.collection('garmin').document('health_kpis').set({
+            'data': kpis_data,
+            'updated_at': firestore.SERVER_TIMESTAMP
+        })
+        
+        # Week
+        query_week = f"SELECT * FROM `{BQ_PROJECT}.garmin.week_progress` ORDER BY goal_name"
+        job_week = bq_client.query(query_week)
+        week_data = [serialize_for_firestore(dict(row)) for row in job_week.result()]
+        
+        fs_client.collection('garmin').document('week_progress').set({
+            'data': week_data,
+            'updated_at': firestore.SERVER_TIMESTAMP
+        })
+        logger.info("Firestore cache updated successfully.")
+    except Exception as e:
+        logger.error(f"Error updating Firestore: {e}")
+        raise
+
 def main():
     parser = argparse.ArgumentParser(description="Garmin Background Sync Orchestrator")
     parser.add_argument("--skip-pull", action="store_true", help="Disable the initial pull of state from GCS")
@@ -138,7 +178,10 @@ def main():
         # 4. Ingest to BigQuery
         ingest_to_bigquery(bq_staging_dir)
         
-        # 5. Push Updated state back to GCS ONLY if BigQuery load was fully successful
+        # 5. Update Firestore Cache
+        update_firestore_cache()
+        
+        # 6. Push Updated state back to GCS ONLY if BigQuery load was fully successful
         push_state_to_gcs()
         
         logger.info("=== Sync Completed Successfully ===")

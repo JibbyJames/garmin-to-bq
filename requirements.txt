@@ -8,7 +8,4 @@ db-dtypes
 pandas-gbq
 google-cloud-logging
 requests
-Flask
-Authlib
-gunicorn
 seleniumbase>=4.30
