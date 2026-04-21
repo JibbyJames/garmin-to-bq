@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -20,24 +21,29 @@
     <script defer src="/__/firebase/10.8.1/firebase-firestore-compat.js"></script>
     <script defer src="/__/firebase/init.js"></script>
 </head>
+
 <body>
     <div class="gb-container">
-        
+
         <nav class="gb-nav" id="dashboard-nav" style="display: none;">
             <div class="nav-links">
-                <a href="#kpis" class="active nav-tab" id="nav-kpis" onclick="switchTab('kpis-view', 'nav-kpis')">KPIs</a>
+                <a href="#kpis" class="active nav-tab" id="nav-kpis"
+                    onclick="switchTab('kpis-view', 'nav-kpis')">KPIs</a>
                 <a href="#week" class="nav-tab" id="nav-week" onclick="switchTab('week-view', 'nav-week')">WEEK</a>
             </div>
             <div class="nav-actions">
                 <button id="syncBtn" class="gb-btn icon-btn" title="Sync Status">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2v4.264C8.016 6.643 5 9.948 5 14H3c0-4.97 4.03-9 9-9V2l4.5 4-4.5 4zM12 22v-4.264c3.984-.379 7-3.684 7-7.736h2c0 4.97-4.03 9-9 9v3l-4.5-4 4.5-4z"/></svg>
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                        <path
+                            d="M12 2v4.264C8.016 6.643 5 9.948 5 14H3c0-4.97 4.03-9 9-9V2l4.5 4-4.5 4zM12 22v-4.264c3.984-.379 7-3.684 7-7.736h2c0 4.97-4.03 9-9 9v3l-4.5-4 4.5-4z" />
+                    </svg>
                 </button>
                 <button id="logoutBtn" class="gb-btn icon-btn" title="Logout">X</button>
             </div>
         </nav>
 
         <div class="gb-screen">
-            
+
             <!-- LOGIN VIEW -->
             <div id="login-view" class="login-container" style="display: none;">
                 <h1>GARMIN OS v1</h1>
@@ -47,8 +53,15 @@
 
             <!-- KPIS VIEW -->
             <div id="kpis-view" class="spa-view" style="display: none;">
-                <div class="kpi-controls">
-                    <button id="cycleBtn" class="gb-btn cycle-btn">VIEWING: <span id="currentView">AVERAGE</span></button>
+                <div class="kpi-controls"
+                    style="display: flex; justify-content: center; align-items: center; gap: 10px;">
+                    <button id="cycleLeftBtn" class="gb-btn cycle-btn"
+                        style="padding: 2px 10px; line-height: 1;">&lt;</button>
+                    <span id="currentViewText"
+                        style="flex: 1; font-weight: bold; text-transform: uppercase; font-size: 22px; text-align: center;">6w
+                        Avg vs Previous Period</span>
+                    <button id="cycleRightBtn" class="gb-btn cycle-btn"
+                        style="padding: 2px 10px; line-height: 1;">&gt;</button>
                 </div>
                 <!-- Data populated dynamically via JS -->
                 <div class="grid-2x3" id="kpis-grid">
@@ -76,7 +89,8 @@
                 <span class="close">&times;</span>
             </div>
             <div id="syncLogs" class="logs">
-                <br>Manual sync via the UI is disabled.<br>The Cloud Run Sync Job executes daily via Cloud Scheduler.<br><br>SYNC RUNS ASYNCHRONOUSLY IN BACKGROUND.
+                <br>Manual sync via the UI is disabled.<br>The Cloud Run Sync Job executes daily via Cloud
+                Scheduler.<br><br>SYNC RUNS ASYNCHRONOUSLY IN BACKGROUND.
             </div>
         </div>
     </div>
@@ -84,24 +98,22 @@
     <!-- Templates for Javascript population -->
     <template id="kpi-card-template">
         <div class="kpi-card">
-            <div class="kpi-header"></div>
-            
+            <div class="kpi-header" style="display: flex; justify-content: space-between; align-items: baseline;">
+                <span class="kpi-name"></span>
+                <span class="kpi-date" style="font-size: 11px; text-align: right;"></span>
+            </div>
+
+            <div class="kpi-value view-6w-avg active">
+                <div class="val"></div>
+                <div class="diff"></div>
+            </div>
+
+            <div class="kpi-value view-1w-avg">
+                <div class="val"></div>
+                <div class="diff"></div>
+            </div>
+
             <div class="kpi-value view-latest">
-                <div class="val"></div>
-                <div class="kpi-date"></div>
-            </div>
-
-            <div class="kpi-value view-avg active">
-                <div class="val"></div>
-                <div class="diff"></div>
-            </div>
-
-            <div class="kpi-value view-min">
-                <div class="val"></div>
-                <div class="diff"></div>
-            </div>
-
-            <div class="kpi-value view-max">
                 <div class="val"></div>
                 <div class="diff"></div>
             </div>
@@ -132,33 +144,46 @@
         }
 
         // Cycle Logic variables
-        const views = ['avg', 'latest', 'min', 'max'];
+        const views = [
+            { id: '6w-avg', text: '6w Avg vs Previous Period' },
+            { id: '1w-avg', text: '1w Avg vs 6w Avg' },
+            { id: 'latest', text: 'Latest vs 6w Avg' }
+        ];
         let currentViewIdx = 0;
-        
-        document.getElementById('cycleBtn').addEventListener('click', () => {
-            document.querySelectorAll('.view-' + views[currentViewIdx]).forEach(el => el.classList.remove('active'));
-            currentViewIdx = (currentViewIdx + 1) % views.length;
-            document.querySelectorAll('.view-' + views[currentViewIdx]).forEach(el => {
+
+        function updateCycleView() {
+            document.querySelectorAll('.kpi-value').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.view-' + views[currentViewIdx].id).forEach(el => {
                 el.classList.add('active');
                 let card = el.closest('.kpi-card');
-                if(el.dataset.status === 'bad') {
+                if (el.dataset.status === 'bad') {
                     card.classList.add('kpi-bad');
                 } else {
                     card.classList.remove('kpi-bad');
                 }
             });
-            document.getElementById('currentView').innerText = views[currentViewIdx].toUpperCase();
+            document.getElementById('currentViewText').innerText = views[currentViewIdx].text;
+        }
+
+        document.getElementById('cycleLeftBtn').addEventListener('click', () => {
+            currentViewIdx = (currentViewIdx - 1 + views.length) % views.length;
+            updateCycleView();
+        });
+
+        document.getElementById('cycleRightBtn').addEventListener('click', () => {
+            currentViewIdx = (currentViewIdx + 1) % views.length;
+            updateCycleView();
         });
 
         // Modal logic
         const syncBtn = document.getElementById('syncBtn');
         const modal = document.getElementById('syncModal');
         const closeBtn = document.querySelector('.close');
-        
-        if(syncBtn) {
+
+        if (syncBtn) {
             syncBtn.onclick = () => modal.style.display = "flex";
         }
-        if(closeBtn) {
+        if (closeBtn) {
             closeBtn.onclick = () => modal.style.display = "none";
         }
 
@@ -182,7 +207,7 @@
                             document.getElementById('login-view').style.display = 'none';
                             document.getElementById('dashboard-nav').style.display = 'flex';
                             switchTab('kpis-view', 'nav-kpis');
-                            
+
                             loadData();
                         } else {
                             // Show Login
@@ -201,7 +226,7 @@
                         auth.signOut();
                     });
                 }
-            }, 500); 
+            }, 500);
         });
 
         function checkBad(val, metric) {
@@ -227,7 +252,7 @@
                 if (kpiDoc.exists) {
                     renderKPIs(kpiDoc.data().data || []);
                 }
-                
+
                 // Fetch Week Progress
                 const weekDoc = await db.collection('garmin').doc('week_progress').get();
                 if (weekDoc.exists) {
@@ -246,46 +271,46 @@
             data.forEach(item => {
                 let clone = tmpl.content.cloneNode(true);
                 let card = clone.querySelector('.kpi-card');
-                
-                let avg_status = checkBad(item.pct_diff_avg, item.metric);
-                if(avg_status === 'bad') card.classList.add('kpi-bad');
 
-                clone.querySelector('.kpi-header').textContent = item.metric;
-                
-                // Latest
-                clone.querySelector('.view-latest .val').textContent = item.current_latest;
-                clone.querySelector('.view-latest .kpi-date').textContent = item.current_latest_date || '';
+                let view6w_status = checkBad(item.pct_diff_avg_6w, item.metric);
+                if (view6w_status === 'bad') card.classList.add('kpi-bad');
 
-                // Avg
-                clone.querySelector('.view-avg').dataset.status = avg_status;
-                clone.querySelector('.view-avg .val').textContent = item.current_avg;
-                let avgDiff = clone.querySelector('.view-avg .diff');
-                avgDiff.textContent = buildDiffString(item.pct_diff_avg);
-                if (parseFloat(item.pct_diff_avg) > 0) avgDiff.classList.add('up');
-                else if (parseFloat(item.pct_diff_avg) < 0) avgDiff.classList.add('down');
+                let displayMetric = item.metric;
+                if (displayMetric === "Resting Heart Rate") displayMetric = "Resting HR";
 
-                // Min
-                let min_status = checkBad(item.pct_diff_min, item.metric);
-                clone.querySelector('.view-min').dataset.status = min_status;
-                clone.querySelector('.view-min .val').textContent = item.current_min;
-                let minDiff = clone.querySelector('.view-min .diff');
-                minDiff.textContent = buildDiffString(item.pct_diff_min);
-                if (parseFloat(item.pct_diff_min) > 0) minDiff.classList.add('up');
-                else if (parseFloat(item.pct_diff_min) < 0) minDiff.classList.add('down');
+                clone.querySelector('.kpi-name').textContent = displayMetric;
+                clone.querySelector('.kpi-date').textContent = item.latest_date || '';
 
-                // Max
-                let max_status = checkBad(item.pct_diff_max, item.metric);
-                clone.querySelector('.view-max').dataset.status = max_status;
-                clone.querySelector('.view-max .val').textContent = item.current_max;
-                let maxDiff = clone.querySelector('.view-max .diff');
-                maxDiff.textContent = buildDiffString(item.pct_diff_max);
-                if (parseFloat(item.pct_diff_max) > 0) maxDiff.classList.add('up');
-                else if (parseFloat(item.pct_diff_max) < 0) maxDiff.classList.add('down');
+                // 6w Avg vs Previous Period
+                clone.querySelector('.view-6w-avg').dataset.status = view6w_status;
+                clone.querySelector('.view-6w-avg .val').textContent = item.current_6w_avg !== null ? item.current_6w_avg : '-';
+                let diff_6w = clone.querySelector('.view-6w-avg .diff');
+                diff_6w.textContent = buildDiffString(item.pct_diff_avg_6w);
+                if (parseFloat(item.pct_diff_avg_6w) > 0) diff_6w.classList.add('up');
+                else if (parseFloat(item.pct_diff_avg_6w) < 0) diff_6w.classList.add('down');
+
+                // 1w Avg vs 6w Avg
+                let view1w_status = checkBad(item.pct_diff_7d_vs_6w, item.metric);
+                clone.querySelector('.view-1w-avg').dataset.status = view1w_status;
+                clone.querySelector('.view-1w-avg .val').textContent = item.avg_7d !== null ? item.avg_7d : '-';
+                let diff_1w = clone.querySelector('.view-1w-avg .diff');
+                diff_1w.textContent = buildDiffString(item.pct_diff_7d_vs_6w);
+                if (parseFloat(item.pct_diff_7d_vs_6w) > 0) diff_1w.classList.add('up');
+                else if (parseFloat(item.pct_diff_7d_vs_6w) < 0) diff_1w.classList.add('down');
+
+                // Latest vs 6w Avg
+                let viewLatest_status = checkBad(item.pct_diff_latest_vs_6w, item.metric);
+                clone.querySelector('.view-latest').dataset.status = viewLatest_status;
+                clone.querySelector('.view-latest .val').textContent = item.latest_val !== null ? item.latest_val : '-';
+                let diff_latest = clone.querySelector('.view-latest .diff');
+                diff_latest.textContent = buildDiffString(item.pct_diff_latest_vs_6w);
+                if (parseFloat(item.pct_diff_latest_vs_6w) > 0) diff_latest.classList.add('up');
+                else if (parseFloat(item.pct_diff_latest_vs_6w) < 0) diff_latest.classList.add('down');
 
                 grid.appendChild(clone);
             });
             // Ensure proper tab visibility logic applied to newly rendered objects
-            let activeView = views[currentViewIdx];
+            let activeView = views[currentViewIdx].id;
             document.querySelectorAll('.kpi-value').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.view-' + activeView).forEach(el => el.classList.add('active'));
         }
@@ -297,7 +322,7 @@
 
             data.forEach(item => {
                 let clone = tmpl.content.cloneNode(true);
-                
+
                 clone.querySelector('.goal-name').textContent = item.goal_name + ":";
                 let unit = (item.goal_name.includes('Cardio') || item.goal_name.includes('Sauna') || item.goal_name.includes('Minutes')) ? 'minutes' : 'sessions';
                 clone.querySelector('.goal-units').textContent = `${Math.round(item.progress)} / ${Math.round(item.target)} ${unit}`;
@@ -321,4 +346,5 @@
         }
     </script>
 </body>
+
 </html>
