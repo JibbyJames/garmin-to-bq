@@ -70,11 +70,25 @@
             </div>
 
             <!-- WEEK PROGRESS VIEW -->
-            <div id="week-view" class="spa-view" style="display: none;">
+            <div id="week-view" class="spa-view" style="display: none; height: 100%; flex-direction: column;">
                 <h2 class="page-title">WEEK PROGRESS</h2>
                 <!-- Data populated dynamically via JS -->
                 <div class="list-1x4" id="week-grid">
                     <div style="text-align:center;">LOADING...</div>
+                </div>
+                
+                <div id="latest-total-completion" style="margin-top: 20px; display: none;">
+                    <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 4px;">
+                        <span>Total %</span>
+                        <span id="latest-total-val">0%</span>
+                    </div>
+                    <div class="progress-bar-container thin-total-container">
+                        <div class="progress-bar thin-total-bar"></div>
+                    </div>
+                </div>
+
+                <div class="accordion" style="margin-top: auto; padding-top: 20px;">
+                    <button class="accordion-btn subtle-btn" id="history-accordion-btn" style="width: 100%; text-align: center; justify-content: center;">VIEW HISTORY</button>
                 </div>
             </div>
 
@@ -91,6 +105,28 @@
             <div id="syncLogs" class="logs">
                 <br>Manual sync via the UI is disabled.<br>The Cloud Run Sync Job executes daily via Cloud
                 Scheduler.<br><br>SYNC RUNS ASYNCHRONOUSLY IN BACKGROUND.
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div id="historyModal" class="modal">
+        <div class="modal-content" style="width: 95%; height: 90%;">
+            <div class="modal-header">
+                <h2>HISTORY</h2>
+                <span class="close-history close">&times;</span>
+            </div>
+            <div class="history-table-header" style="padding: 10px 10px 4px 10px; margin-bottom: 0;">
+                <div class="hist-date-col">WEEK</div>
+                <div class="hist-col">CRD</div>
+                <div class="hist-col">SAU</div>
+                <div class="hist-col">FLX</div>
+                <div class="hist-col">STR</div>
+                <div class="hist-col">TOTAL</div>
+                <div style="width: 8px;"></div> <!-- Scrollbar spacer -->
+            </div>
+            <div class="history-list-container logs" id="history-grid" style="max-height: none; padding-top: 5px;">
+                <div style="text-align:center;">LOADING...</div>
             </div>
         </div>
     </div>
@@ -134,11 +170,25 @@
         </div>
     </template>
 
+    <template id="history-row-template">
+        <div class="history-row">
+            <div class="hist-date-col date-val"></div>
+            <div class="hist-col"><div class="hist-bar-bg"><div class="hist-bar cardio-bar"></div></div></div>
+            <div class="hist-col"><div class="hist-bar-bg"><div class="hist-bar sauna-bar"></div></div></div>
+            <div class="hist-col"><div class="hist-bar-bg"><div class="hist-bar flexibility-bar"></div></div></div>
+            <div class="hist-col"><div class="hist-bar-bg"><div class="hist-bar strength-bar"></div></div></div>
+            <div class="hist-col"><div class="hist-bar-bg hist-bar-light"><div class="hist-bar total-hist-bar"></div></div></div>
+        </div>
+    </template>
+
     <script>
         // SPA Tab Switching Logic
         function switchTab(viewId, navId) {
-            document.querySelectorAll('.spa-view').forEach(el => el.style.display = 'none');
-            document.getElementById(viewId).style.display = 'block';
+            document.querySelectorAll('.spa-view').forEach(el => {
+                el.style.display = 'none';
+            });
+            let viewEl = document.getElementById(viewId);
+            viewEl.style.display = viewId === 'week-view' ? 'flex' : 'block';
             document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
             document.getElementById(navId).classList.add('active');
         }
@@ -177,14 +227,25 @@
 
         // Modal logic
         const syncBtn = document.getElementById('syncBtn');
-        const modal = document.getElementById('syncModal');
-        const closeBtn = document.querySelector('.close');
+        const syncModal = document.getElementById('syncModal');
+        const closeSyncBtn = syncModal.querySelector('.close');
 
         if (syncBtn) {
-            syncBtn.onclick = () => modal.style.display = "flex";
+            syncBtn.onclick = () => syncModal.style.display = "flex";
         }
-        if (closeBtn) {
-            closeBtn.onclick = () => modal.style.display = "none";
+        if (closeSyncBtn) {
+            closeSyncBtn.onclick = () => syncModal.style.display = "none";
+        }
+
+        const histBtn = document.getElementById('history-accordion-btn');
+        const histModal = document.getElementById('historyModal');
+        const closeHistBtn = histModal.querySelector('.close-history');
+
+        if (histBtn) {
+            histBtn.onclick = () => histModal.style.display = "flex";
+        }
+        if (closeHistBtn) {
+            closeHistBtn.onclick = () => histModal.style.display = "none";
         }
 
         // Firebase & Data Logic
@@ -257,6 +318,12 @@
                 const weekDoc = await db.collection('garmin').doc('week_progress').get();
                 if (weekDoc.exists) {
                     renderWeek(weekDoc.data().data || []);
+                }
+
+                // Fetch Historical Week Progress
+                const histDoc = await db.collection('garmin').doc('week_progress_historical').get();
+                if (histDoc.exists) {
+                    renderHistory(histDoc.data().data || []);
                 }
             } catch (e) {
                 console.error("Error loading data from Firestore: ", e);
@@ -340,6 +407,43 @@
                 }
 
                 clone.querySelector('.progress-footer').textContent = item.last_recorded ? "Last: " + item.last_recorded : "No records yet";
+
+                grid.appendChild(clone);
+            });
+        }
+
+        function renderHistory(data) {
+            const grid = document.getElementById('history-grid');
+            grid.innerHTML = '';
+            const tmpl = document.getElementById('history-row-template');
+
+            if (data.length > 0) {
+                // Update latest total completion bar
+                let latest = data[0];
+                document.getElementById('latest-total-completion').style.display = 'block';
+                let totalPct = parseFloat(latest.total_completion_pct || 0) * 100;
+                let tbar = document.querySelector('#latest-total-completion .thin-total-bar');
+                tbar.style.width = (totalPct <= 100 ? totalPct : 100) + '%';
+                if (totalPct >= 100) tbar.classList.add('complete');
+                document.getElementById('latest-total-val').innerText = Math.round(totalPct) + '%';
+            }
+
+            data.forEach(item => {
+                let clone = tmpl.content.cloneNode(true);
+
+                clone.querySelector('.date-val').textContent = item.week_start;
+
+                let cPct = parseFloat(item.cardio_pct || 0) * 100;
+                let sPct = parseFloat(item.sauna_pct || 0) * 100;
+                let fPct = parseFloat(item.flexibility_pct || 0) * 100;
+                let stPct = parseFloat(item.strength_pct || 0) * 100;
+                let totalPct = parseFloat(item.total_completion_pct || 0) * 100;
+
+                clone.querySelector('.cardio-bar').style.width = (cPct <= 100 ? cPct : 100) + '%';
+                clone.querySelector('.sauna-bar').style.width = (sPct <= 100 ? sPct : 100) + '%';
+                clone.querySelector('.flexibility-bar').style.width = (fPct <= 100 ? fPct : 100) + '%';
+                clone.querySelector('.strength-bar').style.width = (stPct <= 100 ? stPct : 100) + '%';
+                clone.querySelector('.total-hist-bar').style.width = (totalPct <= 100 ? totalPct : 100) + '%';
 
                 grid.appendChild(clone);
             });

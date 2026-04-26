@@ -35,7 +35,42 @@ firebase use --add james-gcp-project
 firebase deploy
 ```
 
-***
+### 3. Deploy Back-End
+If you make changes to the data pipeline or `sync_orchestrator.py`, you must redeploy the Cloud Run job from the project root:
+```bash
+gcloud run jobs deploy garmin-sync-job \
+    --source . \
+    --region="europe-west1" \
+    --command="python" \
+    --args="sync_orchestrator.py" \
+    --tasks=1 \
+    --max-retries=0 \
+    --memory=4Gi \
+    --cpu=2 \
+    --task-timeout=30m \
+    --network="james-network" \
+    --subnet="james-subnet" \
+    --vpc-egress=all-traffic \
+    --service-account="garmin@james-gcp-project.iam.gserviceaccount.com"
+```
+
+### 4. Local Testing
+To test the progressive web app locally, you must use the Firebase CLI since the application relies on reserved Firebase CDN URLs that normal local servers cannot resolve.
+
+1. Ensure the backend data is populated first. You can run the full sync script locally, or optionally bypass the Garmin extraction step entirely and just run `seed_firestore.py` to push the latest BigQuery views straight into Firestore for quick frontend testing:
+```bash
+python sync_orchestrator.py --skip-pull
+# OR 
+python scripts/seed_firestore.py
+```
+2. Start the Firebase Local Emulator for hosting:
+```bash
+firebase emulators:start --only hosting
+# OR
+firebase serve --only hosting
+```
+3. Open the provided `localhost` URL in your browser to verify the changes.
+
 
 ## Full Deployment Guide
 

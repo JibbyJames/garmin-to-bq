@@ -116,6 +116,17 @@ def update_firestore_cache():
             'data': week_data,
             'updated_at': firestore.SERVER_TIMESTAMP
         })
+        
+        # Week Historical
+        query_week_hist = f"SELECT * FROM `{BQ_PROJECT}.garmin.week_progress_historical` ORDER BY week_start DESC"
+        job_week_hist = bq_client.query(query_week_hist)
+        week_hist_data = [serialize_for_firestore(dict(row)) for row in job_week_hist.result()]
+        
+        fs_client.collection('garmin').document('week_progress_historical').set({
+            'data': week_hist_data,
+            'updated_at': firestore.SERVER_TIMESTAMP
+        })
+        
         logger.info("Firestore cache updated successfully.")
     except Exception as e:
         logger.error(f"Error updating Firestore: {e}")
