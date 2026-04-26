@@ -5,3 +5,4 @@ exports/
 garmin_givemydata_repo/
 .venv/
 .venv
+.firebase/

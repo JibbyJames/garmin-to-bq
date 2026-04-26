@@ -93,42 +93,42 @@
             </div>
 
         </div>
-    </div>
-
-    <!-- Sync Modal -->
-    <div id="syncModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>SYSTEM SYNC</h2>
-                <span class="close">&times;</span>
-            </div>
-            <div id="syncLogs" class="logs">
-                <br>Manual sync via the UI is disabled.<br>The Cloud Run Sync Job executes daily via Cloud
-                Scheduler.<br><br>SYNC RUNS ASYNCHRONOUSLY IN BACKGROUND.
-            </div>
-        </div>
-    </div>
-
-    <!-- History Modal -->
-    <div id="historyModal" class="modal">
-        <div class="modal-content" style="width: 95%; height: 90%;">
-            <div class="modal-header">
-                <h2>HISTORY</h2>
-                <span class="close-history close">&times;</span>
-            </div>
-            <div class="history-table-header" style="padding: 10px 10px 4px 10px; margin-bottom: 0;">
-                <div class="hist-date-col">WEEK</div>
-                <div class="hist-col">CRD</div>
-                <div class="hist-col">SAU</div>
-                <div class="hist-col">FLX</div>
-                <div class="hist-col">STR</div>
-                <div class="hist-col">TOTAL</div>
-                <div style="width: 8px;"></div> <!-- Scrollbar spacer -->
-            </div>
-            <div class="history-list-container logs" id="history-grid" style="max-height: none; padding-top: 5px;">
-                <div style="text-align:center;">LOADING...</div>
+        <!-- Sync Modal -->
+        <div id="syncModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>SYSTEM SYNC</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div id="syncLogs" class="logs">
+                    <br>Manual sync via the UI is disabled.<br>The Cloud Run Sync Job executes daily via Cloud
+                    Scheduler.<br><br>SYNC RUNS ASYNCHRONOUSLY IN BACKGROUND.
+                </div>
             </div>
         </div>
+
+        <!-- History Modal -->
+        <div id="historyModal" class="modal">
+            <div class="modal-content" style="width: 95%; height: 90%;">
+                <div class="modal-header">
+                    <h2>HISTORY</h2>
+                    <span class="close-history close">&times;</span>
+                </div>
+                <div class="history-table-header" style="padding: 10px 10px 4px 10px; margin-bottom: 0;">
+                    <div class="hist-date-col">WEEK</div>
+                    <div class="hist-col">CRD</div>
+                    <div class="hist-col">SAU</div>
+                    <div class="hist-col">FLX</div>
+                    <div class="hist-col">STR</div>
+                    <div class="hist-col">TOTAL</div>
+                    <div style="width: 8px;"></div> <!-- Scrollbar spacer -->
+                </div>
+                <div class="history-list-container logs" id="history-grid" style="max-height: none; padding-top: 5px;">
+                    <div style="text-align:center;">LOADING...</div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- Templates for Javascript population -->
