@@ -10,7 +10,7 @@ The project runs an automated daily extraction pulling all historical FIT data a
 ## Prerequisites
 - Docker (for local testing of the orchestrated job)
 - Google Cloud Platform Account
-- Google Secret Manager and Google Cloud Storage (for session state persistence)
+- Google Cloud Storage (for session state persistence)
 
 ## Automated Extraction Architecture
 
