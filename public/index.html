@@ -21,6 +21,7 @@
     <script defer src="/__/firebase/10.8.1/firebase-auth-compat.js"></script>
     <script defer src="/__/firebase/10.8.1/firebase-firestore-compat.js"></script>
     <script defer src="/__/firebase/init.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -31,6 +32,8 @@
                 <a href="#kpis" class="active nav-tab" id="nav-kpis"
                     onclick="switchTab('kpis-view', 'nav-kpis')">KPIs</a>
                 <a href="#week" class="nav-tab" id="nav-week" onclick="switchTab('week-view', 'nav-week')">WEEK</a>
+                <a href="#charts" class="nav-tab" id="nav-charts"
+                    onclick="switchTab('charts-view', 'nav-charts')">CHARTS</a>
             </div>
             <div class="nav-actions">
                 <button id="syncBtn" class="gb-btn icon-btn" title="Sync Status">
@@ -99,6 +102,76 @@
                 <div class="accordion" style="margin-top: auto; padding-top: 20px;">
                     <button class="accordion-btn subtle-btn" id="history-accordion-btn"
                         style="width: 100%; text-align: center; justify-content: center;">VIEW HISTORY</button>
+                </div>
+            </div>
+
+            <!-- CHARTS VIEW -->
+            <div id="charts-view" class="spa-view" style="display: none; height: 100%;">
+
+                <!-- Window Controls (Matches KPIs view) -->
+                <div class="kpi-controls"
+                    style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 5px; margin-top: -5px;">
+                    <button id="chartPrevBtn" class="gb-btn cycle-btn"
+                        style="padding: 2px 10px; line-height: 1;">&lt;</button>
+                    <span id="chartWindowLabel"
+                        style="flex: 1; text-transform: uppercase; font-size: 18px; text-align: center;">Current</span>
+                    <button id="chartNextBtn" class="gb-btn cycle-btn" style="padding: 2px 10px; line-height: 1;"
+                        disabled>&gt;</button>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="healthChart"></canvas>
+                </div>
+
+                <div class="charts-controls">
+                    <!-- Metrics Toggles -->
+                    <div class="options-section metrics-section">
+                        <div class="section-title">METRICS</div>
+                        <div class="metrics-toggles">
+                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="VO2 Max"
+                                    checked><span class="gb-checkbox-label">VO2 Max</span></label>
+                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="Sleep Score"
+                                    checked><span class="gb-checkbox-label">Sleep</span></label>
+                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="Body Fat %"><span
+                                    class="gb-checkbox-label">Body Fat %</span></label>
+                            <label><input type="checkbox" class="gb-checkbox metric-toggle"
+                                    value="Resting Heart Rate"><span class="gb-checkbox-label">Resting HR</span></label>
+                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="Stress"><span
+                                    class="gb-checkbox-label">Stress</span></label>
+                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="Youth Bonus"><span
+                                    class="gb-checkbox-label" style="font-size: 13px;">Youth Bonus</span></label>
+                        </div>
+                    </div>
+
+                    <div class="options-row">
+                        <!-- Date Range Radio -->
+                        <div class="options-section">
+                            <div class="section-title">DATE RANGE</div>
+                            <div class="radio-group" id="range-group">
+                                <label><input type="radio" name="range" class="gb-radio" value="1M" checked><span
+                                        class="gb-radio-label">1M</span></label>
+                                <label><input type="radio" name="range" class="gb-radio" value="6M"><span
+                                        class="gb-radio-label">6M</span></label>
+                                <label><input type="radio" name="range" class="gb-radio" value="1Y"><span
+                                        class="gb-radio-label">1Y</span></label>
+                                <label><input type="radio" name="range" class="gb-radio" value="MAX"><span
+                                        class="gb-radio-label">MAX</span></label>
+                            </div>
+                        </div>
+
+                        <!-- Aggregation Radio -->
+                        <div class="options-section">
+                            <div class="section-title">AGGREGATE BY</div>
+                            <div class="radio-group" id="agg-group">
+                                <label><input type="radio" name="agg" class="gb-radio" value="day" checked><span
+                                        class="gb-radio-label">DAY</span></label>
+                                <label><input type="radio" name="agg" class="gb-radio" value="week"><span
+                                        class="gb-radio-label">WEEK</span></label>
+                                <label><input type="radio" name="agg" class="gb-radio" value="month"><span
+                                        class="gb-radio-label">MONTH</span></label>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -212,15 +285,37 @@
     </template>
 
     <script>
+        // Charts Variables
+        let healthChartInstance = null;
+        let chartDataCache = { 'day': null, 'week': null, 'month': null };
+        let currentAgg = 'day';
+        let currentRange = '1M';
+        let currentWindowOffset = 0; // 0 = current, 1 = previous, etc.
+        let isChartsLoaded = false;
+
+        const metricConfig = {
+            'VO2 Max': { borderDash: [], pointStyle: 'circle', yAxisID: 'y' },
+            'Sleep Score': { borderDash: [5, 5], pointStyle: 'rect', yAxisID: 'y' },
+            'Body Fat %': { borderDash: [2, 2], pointStyle: 'triangle', yAxisID: 'y1' },
+            'Resting Heart Rate': { borderDash: [10, 5, 2, 5], pointStyle: 'cross', yAxisID: 'y' },
+            'Stress': { borderDash: [15, 5], pointStyle: 'star', yAxisID: 'y' },
+            'Youth Bonus': { borderDash: [5, 10], pointStyle: 'rectRot', yAxisID: 'y1' }
+        };
+
         // SPA Tab Switching Logic
         function switchTab(viewId, navId) {
             document.querySelectorAll('.spa-view').forEach(el => {
                 el.style.display = 'none';
             });
             let viewEl = document.getElementById(viewId);
-            viewEl.style.display = viewId === 'week-view' ? 'flex' : 'block';
+            viewEl.style.display = (viewId === 'week-view' || viewId === 'charts-view') ? 'flex' : 'block';
             document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
             document.getElementById(navId).classList.add('active');
+
+            if (viewId === 'charts-view' && !isChartsLoaded) {
+                loadChartData(currentAgg);
+                isChartsLoaded = true;
+            }
         }
 
         // Cycle Logic variables
@@ -297,7 +392,16 @@
                             // Show Dashboard
                             document.getElementById('login-view').style.display = 'none';
                             document.getElementById('dashboard-nav').style.display = 'flex';
-                            switchTab('kpis-view', 'nav-kpis');
+
+                            // Restore tab from hash
+                            let hash = window.location.hash;
+                            if (hash === '#week') {
+                                switchTab('week-view', 'nav-week');
+                            } else if (hash === '#charts') {
+                                switchTab('charts-view', 'nav-charts');
+                            } else {
+                                switchTab('kpis-view', 'nav-kpis');
+                            }
 
                             loadData();
                         } else {
@@ -521,6 +625,188 @@
                 grid.appendChild(clone);
             });
         }
+
+        // --- Charts Logic ---
+        async function loadChartData(agg) {
+            if (!chartDataCache[agg]) {
+                try {
+                    const doc = await db.collection('garmin').doc(`charts_${agg}`).get();
+                    if (doc.exists) {
+                        chartDataCache[agg] = doc.data().data || [];
+                    } else {
+                        chartDataCache[agg] = [];
+                    }
+                } catch (e) {
+                    console.error("Error loading chart data", e);
+                    chartDataCache[agg] = [];
+                }
+            }
+            renderChart();
+        }
+
+        function renderChart() {
+            let data = chartDataCache[currentAgg] || [];
+            if (data.length === 0) return;
+
+            // Filter by date range and window offset
+            let latestDateStr = data[0].date; // It's sorted DESC
+            let latestDate = new Date(latestDateStr);
+
+            let monthsToSubtract = 1;
+            if (currentRange === '6M') monthsToSubtract = 6;
+            else if (currentRange === '1Y') monthsToSubtract = 12;
+            else if (currentRange === 'MAX') monthsToSubtract = 1200; // 100 years
+
+            // Calculate start and end date for the window
+            let endDate = new Date(latestDate);
+            endDate.setMonth(endDate.getMonth() - (monthsToSubtract * currentWindowOffset));
+
+            let startDate = new Date(endDate);
+            startDate.setMonth(startDate.getMonth() - monthsToSubtract);
+
+            let filteredData = data.filter(d => {
+                let dDate = new Date(d.date);
+                return dDate >= startDate && dDate <= endDate;
+            });
+
+            // Re-sort ASC for Chart.js
+            filteredData.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            let labels = filteredData.map(d => {
+                let dObj = new Date(d.date);
+                return `${dObj.getFullYear()}-${String(dObj.getMonth() + 1).padStart(2, '0')}-${String(dObj.getDate()).padStart(2, '0')}`;
+            });
+
+            // Get selected metrics
+            let activeMetrics = Array.from(document.querySelectorAll('.metric-toggle:checked')).map(cb => cb.value);
+
+            let datasets = activeMetrics.map(metric => {
+                let conf = metricConfig[metric] || { borderDash: [], pointStyle: 'circle', yAxisID: 'y' };
+                return {
+                    label: metric,
+                    data: filteredData.map(d => d[metric] !== undefined ? d[metric] : null),
+                    borderColor: '#0f380f',
+                    backgroundColor: '#0f380f',
+                    borderWidth: 2,
+                    borderDash: conf.borderDash,
+                    pointStyle: conf.pointStyle,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    yAxisID: conf.yAxisID,
+                    spanGaps: true,
+                    tension: 0.1
+                };
+            });
+
+            if (healthChartInstance) {
+                healthChartInstance.destroy();
+            }
+
+            const ctx = document.getElementById('healthChart').getContext('2d');
+
+            let useY1 = activeMetrics.some(m => metricConfig[m] && metricConfig[m].yAxisID === 'y1');
+
+            healthChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    color: '#0f380f',
+                    plugins: {
+                        legend: {
+                            display: false // hide default legend because we have toggles
+                        },
+                        tooltip: {
+                            backgroundColor: '#9bbc0f',
+                            titleColor: '#0f380f',
+                            bodyColor: '#0f380f',
+                            borderColor: '#0f380f',
+                            borderWidth: 2,
+                            titleFont: { family: "'VT323', monospace", size: 16 },
+                            bodyFont: { family: "'VT323', monospace", size: 16 },
+                            cornerRadius: 0
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                font: { family: "'VT323', monospace", size: 12 },
+                                color: '#0f380f',
+                                maxTicksLimit: 6
+                            },
+                            grid: { color: 'rgba(139, 172, 15, 0.5)' }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            ticks: {
+                                font: { family: "'VT323', monospace", size: 14 },
+                                color: '#0f380f'
+                            },
+                            grid: { color: 'rgba(139, 172, 15, 0.5)', borderDash: [2, 2] }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: useY1,
+                            position: 'right',
+                            ticks: {
+                                font: { family: "'VT323', monospace", size: 14 },
+                                color: '#0f380f'
+                            },
+                            grid: { drawOnChartArea: false }
+                        }
+                    }
+                }
+            });
+
+            // Update Window Label
+            let startStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
+            let endStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+            let labelText = `${startStr} - ${endStr}`;
+
+            if (currentRange === 'MAX') labelText = "ALL TIME";
+            document.getElementById('chartWindowLabel').innerText = labelText;
+
+            document.getElementById('chartNextBtn').disabled = (currentWindowOffset === 0);
+            document.getElementById('chartPrevBtn').disabled = (currentRange === 'MAX' || filteredData.length === 0);
+        }
+
+        // Event Listeners for Charts
+        document.querySelectorAll('.metric-toggle').forEach(cb => {
+            cb.addEventListener('change', renderChart);
+        });
+
+        document.querySelectorAll('input[name="agg"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                currentAgg = e.target.value;
+                loadChartData(currentAgg);
+            });
+        });
+
+        document.querySelectorAll('input[name="range"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                currentRange = e.target.value;
+                currentWindowOffset = 0; // reset offset
+                renderChart();
+            });
+        });
+
+        document.getElementById('chartPrevBtn').addEventListener('click', () => {
+            currentWindowOffset++;
+            renderChart();
+        });
+
+        document.getElementById('chartNextBtn').addEventListener('click', () => {
+            if (currentWindowOffset > 0) {
+                currentWindowOffset--;
+                renderChart();
+            }
+        });
     </script>
 </body>
 

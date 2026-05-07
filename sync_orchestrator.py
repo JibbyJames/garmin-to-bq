@@ -127,6 +127,39 @@ def update_firestore_cache():
             'updated_at': firestore.SERVER_TIMESTAMP
         })
         
+        # Charts Data
+        query_charts = f"SELECT * FROM `{BQ_PROJECT}.garmin.health_charts`"
+        job_charts = bq_client.query(query_charts)
+        
+        charts_dict = {'day': {}, 'week': {}, 'month': {}}
+        for row in job_charts.result():
+            agg = row['agg_type']
+            date_str = serialize_for_firestore(row['date'])
+            metric = row['metric']
+            val = row['value']
+            
+            if date_str not in charts_dict[agg]:
+                charts_dict[agg][date_str] = {'date': date_str}
+            charts_dict[agg][date_str][metric] = val
+            
+        # Convert dictionaries to arrays grouped by date and sort descending
+        day_data = sorted(list(charts_dict['day'].values()), key=lambda x: x['date'], reverse=True)
+        week_data = sorted(list(charts_dict['week'].values()), key=lambda x: x['date'], reverse=True)
+        month_data = sorted(list(charts_dict['month'].values()), key=lambda x: x['date'], reverse=True)
+        
+        fs_client.collection('garmin').document('charts_day').set({
+            'data': day_data,
+            'updated_at': firestore.SERVER_TIMESTAMP
+        })
+        fs_client.collection('garmin').document('charts_week').set({
+            'data': week_data,
+            'updated_at': firestore.SERVER_TIMESTAMP
+        })
+        fs_client.collection('garmin').document('charts_month').set({
+            'data': month_data,
+            'updated_at': firestore.SERVER_TIMESTAMP
+        })
+
         logger.info("Firestore cache updated successfully.")
     except Exception as e:
         logger.error(f"Error updating Firestore: {e}")
