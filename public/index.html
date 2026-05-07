@@ -10,6 +10,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="/icon.svg">
+    <link rel="icon" type="image/svg+xml" href="/icon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
@@ -38,7 +39,6 @@
                             d="M12 2v4.264C8.016 6.643 5 9.948 5 14H3c0-4.97 4.03-9 9-9V2l4.5 4-4.5 4zM12 22v-4.264c3.984-.379 7-3.684 7-7.736h2c0 4.97-4.03 9-9 9v3l-4.5-4 4.5-4z" />
                     </svg>
                 </button>
-                <button id="logoutBtn" class="gb-btn icon-btn" title="Logout">X</button>
             </div>
         </nav>
 
@@ -48,7 +48,7 @@
             <div id="login-view" class="login-container" style="display: none;">
                 <h1>GARMIN OS v1</h1>
                 <p>INSERT TOKEN</p>
-                <button id="loginBtn" class="gb-btn large-btn">AUTHORIZE</button>
+                <button id="loginBtn" class="gb-btn large-btn">LOG IN</button>
             </div>
 
             <!-- KPIS VIEW -->
@@ -71,12 +71,11 @@
 
             <!-- WEEK PROGRESS VIEW -->
             <div id="week-view" class="spa-view" style="display: none; height: 100%; flex-direction: column;">
-                <h2 class="page-title">WEEK PROGRESS</h2>
                 <!-- Data populated dynamically via JS -->
                 <div class="list-1x4" id="week-grid">
                     <div style="text-align:center;">LOADING...</div>
                 </div>
-                
+
                 <div id="latest-total-completion" style="margin-top: 20px; display: none;">
                     <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 4px;">
                         <span>Total %</span>
@@ -87,8 +86,19 @@
                     </div>
                 </div>
 
+                <div id="time-progress-completion" style="margin-top: 10px; display: none;">
+                    <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 4px;">
+                        <span>Week Progress %</span>
+                        <span id="time-progress-val">0%</span>
+                    </div>
+                    <div class="progress-bar-container thin-total-container">
+                        <div class="progress-bar time-progress-bar"></div>
+                    </div>
+                </div>
+
                 <div class="accordion" style="margin-top: auto; padding-top: 20px;">
-                    <button class="accordion-btn subtle-btn" id="history-accordion-btn" style="width: 100%; text-align: center; justify-content: center;">VIEW HISTORY</button>
+                    <button class="accordion-btn subtle-btn" id="history-accordion-btn"
+                        style="width: 100%; text-align: center; justify-content: center;">VIEW HISTORY</button>
                 </div>
             </div>
 
@@ -102,7 +112,7 @@
                 </div>
                 <div id="syncLogs" class="logs">
                     <br>Manual sync via the UI is disabled.<br>The Cloud Run Sync Job executes daily via Cloud
-                    Scheduler.<br><br>SYNC RUNS ASYNCHRONOUSLY IN BACKGROUND.
+                    Scheduler.<br>
                 </div>
             </div>
         </div>
@@ -173,11 +183,31 @@
     <template id="history-row-template">
         <div class="history-row">
             <div class="hist-date-col date-val"></div>
-            <div class="hist-col"><div class="hist-bar-bg"><div class="hist-bar cardio-bar"></div></div></div>
-            <div class="hist-col"><div class="hist-bar-bg"><div class="hist-bar sauna-bar"></div></div></div>
-            <div class="hist-col"><div class="hist-bar-bg"><div class="hist-bar flexibility-bar"></div></div></div>
-            <div class="hist-col"><div class="hist-bar-bg"><div class="hist-bar strength-bar"></div></div></div>
-            <div class="hist-col"><div class="hist-bar-bg hist-bar-light"><div class="hist-bar total-hist-bar"></div></div></div>
+            <div class="hist-col">
+                <div class="hist-bar-bg">
+                    <div class="hist-bar cardio-bar"></div>
+                </div>
+            </div>
+            <div class="hist-col">
+                <div class="hist-bar-bg">
+                    <div class="hist-bar sauna-bar"></div>
+                </div>
+            </div>
+            <div class="hist-col">
+                <div class="hist-bar-bg">
+                    <div class="hist-bar flexibility-bar"></div>
+                </div>
+            </div>
+            <div class="hist-col">
+                <div class="hist-bar-bg">
+                    <div class="hist-bar strength-bar"></div>
+                </div>
+            </div>
+            <div class="hist-col">
+                <div class="hist-bar-bg">
+                    <div class="hist-bar total-hist-bar"></div>
+                </div>
+            </div>
         </div>
     </template>
 
@@ -282,10 +312,6 @@
                         const provider = new firebase.auth.GoogleAuthProvider();
                         auth.signInWithPopup(provider).catch(console.error);
                     });
-
-                    document.getElementById('logoutBtn').addEventListener('click', () => {
-                        auth.signOut();
-                    });
                 }
             }, 500);
         });
@@ -325,6 +351,8 @@
                 if (histDoc.exists) {
                     renderHistory(histDoc.data().data || []);
                 }
+
+                renderTimeProgress();
             } catch (e) {
                 console.error("Error loading data from Firestore: ", e);
             }
@@ -390,7 +418,7 @@
             data.forEach(item => {
                 let clone = tmpl.content.cloneNode(true);
 
-                clone.querySelector('.goal-name').textContent = item.goal_name + ":";
+                clone.querySelector('.goal-name').textContent = item.goal_name;
                 let unit = (item.goal_name.includes('Cardio') || item.goal_name.includes('Sauna') || item.goal_name.includes('Minutes')) ? 'minutes' : 'sessions';
                 clone.querySelector('.goal-units').textContent = `${Math.round(item.progress)} / ${Math.round(item.target)} ${unit}`;
 
@@ -406,10 +434,55 @@
                     p2.style.width = (pct - 100 <= 100 ? pct - 100 : 100) + '%';
                 }
 
-                clone.querySelector('.progress-footer').textContent = item.last_recorded ? "Last: " + item.last_recorded : "No records yet";
+                let lastStr = "No records yet";
+                if (item.last_recorded) {
+                    try {
+                        let d = new Date(item.last_recorded.replace(' ', 'T'));
+                        if (!isNaN(d)) {
+                            let year = d.getFullYear();
+                            let month = String(d.getMonth() + 1).padStart(2, '0');
+                            let day = String(d.getDate()).padStart(2, '0');
+                            let hours = String(d.getHours()).padStart(2, '0');
+                            let minutes = String(d.getMinutes()).padStart(2, '0');
+                            let fmt = `${year}-${month}-${day} ${hours}:${minutes}`;
+                            lastStr = "Last: " + fmt;
+                        } else {
+                            lastStr = "Last: " + item.last_recorded;
+                        }
+                    } catch (e) {
+                        lastStr = "Last: " + item.last_recorded;
+                    }
+                }
+                clone.querySelector('.progress-footer').textContent = lastStr;
 
                 grid.appendChild(clone);
             });
+        }
+
+        function renderTimeProgress() {
+            document.getElementById('time-progress-completion').style.display = 'block';
+
+            const now = new Date();
+            let day = now.getDay() - 1;
+            if (day === -1) day = 6;
+
+            const hour = now.getHours();
+            const min = now.getMinutes();
+
+            const totalMinutesInWeek = 7 * 24 * 60;
+            const minutesPassed = (day * 24 * 60) + (hour * 60) + min;
+            const timePct = (minutesPassed / totalMinutesInWeek) * 100;
+
+            let year = now.getFullYear();
+            let month = String(now.getMonth() + 1).padStart(2, '0');
+            let dateDay = String(now.getDate()).padStart(2, '0');
+            let hours = String(hour).padStart(2, '0');
+            let minutes = String(min).padStart(2, '0');
+            let fmt = `${year}-${month}-${dateDay} ${hours}:${minutes}`;
+
+            let tbar = document.querySelector('#time-progress-completion .time-progress-bar');
+            tbar.style.width = (timePct <= 100 ? timePct : 100) + '%';
+            document.getElementById('time-progress-val').innerText = `${fmt} - ${Math.round(timePct)}%`;
         }
 
         function renderHistory(data) {

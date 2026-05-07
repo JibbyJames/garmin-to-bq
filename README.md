@@ -120,23 +120,6 @@ The extraction logic depends entirely on the [garmin-givemydata](https://github.
 
 ## TODO
 
-- Data Sync
-    - Optimise the sync process by uploading only the tables used in the GBQ views currently.
-
-- Misc
-    - Remove X on main dashboard
-    - See if OAuth session duration can be increased (browser cookies?)
-    - Show "Last Updated" time/date somewhere
-    - Ask Gen AI for features/ideas/improvements
-
-- KPIs
-    - Make latest KPIs compared with current average (update SQL required)
-    - Add a title to the KPIs page
-
-- Week
-    - Remove colon after week activity titles
-    - Show "Total %" in week progress
-    - Show week progress (based on time of day)
-
 - Charts
     - Create a new charts tab with the KPI metrics on time series graphs
+    - Allow for the metrics to be plotted together and over different time periods (e.g. weekly, monthly, yearly)

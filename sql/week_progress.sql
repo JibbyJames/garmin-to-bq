@@ -1,3 +1,7 @@
+WITH constants AS (
+  -- Dynamically calculates the most recent Monday at 00:00:00
+  SELECT TIMESTAMP(DATETIME_TRUNC(CURRENT_DATETIME(), WEEK(MONDAY))) AS start_of_week
+)
 SELECT
   goal.goal_name,
   goal.progress,
@@ -5,47 +9,50 @@ SELECT
   goal.last_recorded,
   ROUND(SAFE_DIVIDE(goal.progress, goal.target), 4) AS percentage
 FROM (
-  -- 90 Vigorous Minutes
+  -- 90 Vigorous Minutes (Cardio)
   SELECT
     'Cardio' AS goal_name,
-    COALESCE(SUM(activities.VigorousIntensityMinutes), 0) AS progress,
+    COALESCE(SUM(`Vigorous Intensity _min_`), 0) AS progress,
     90 AS target,
-    MAX(CASE WHEN activities.VigorousIntensityMinutes > 0 THEN activities.StartTime END) AS last_recorded
-  FROM `james-gcp-project.garmin.activities` AS activities
-  WHERE activities.StartTime >= DATETIME_TRUNC(CURRENT_DATETIME(), WEEK(MONDAY))
-    AND LOWER(activities.ActivityName) != 'martial arts'
+    MAX(CASE WHEN `Vigorous Intensity _min_` > 0 THEN `Start Time` END) AS last_recorded
+  FROM `james-gcp-project.garmin.activity`, constants
+  WHERE `Start Time` >= constants.start_of_week
+    -- Exclude Martial Arts (Sauna) by Name
+    AND (LOWER(`Activity Name`) != 'martial arts' OR `Activity Name` IS NULL)
+    -- Exclude Strength Training by Type
+    AND (LOWER(`Activity Type`) != 'strength_training' OR `Activity Type` IS NULL)
 
   UNION ALL
 
-  -- 60 Minutes of "Sauna" (recorded as Martial Arts)
+  -- 60 Minutes of "Sauna" (Martial Arts)
   SELECT
     'Sauna' AS goal_name,
-    COALESCE(SUM(CASE WHEN LOWER(activities.ActivityName) = 'martial arts' THEN activities.DurationMin ELSE 0 END), 0) AS progress,
+    COALESCE(SUM(CASE WHEN LOWER(`Activity Name`) = 'martial arts' THEN `Duration _s_` / 60.0 ELSE 0 END), 0) AS progress,
     60 AS target,
-    MAX(CASE WHEN LOWER(activities.ActivityName) = 'martial arts' THEN activities.StartTime END) AS last_recorded
-  FROM `james-gcp-project.garmin.activities` AS activities
-  WHERE activities.StartTime >= DATETIME_TRUNC(CURRENT_DATETIME(), WEEK(MONDAY))
+    MAX(CASE WHEN LOWER(`Activity Name`) = 'martial arts' THEN `Start Time` END) AS last_recorded
+  FROM `james-gcp-project.garmin.activity`, constants
+  WHERE `Start Time` >= constants.start_of_week
 
   UNION ALL
 
-  -- 3 Pilates Activities
+  -- 3 Pilates Activities (Flexibility)
   SELECT
     'Flexibility' AS goal_name,
-    CAST(COUNTIF(LOWER(activities.ActivityType) = 'pilates') AS FLOAT64) AS progress,
+    CAST(COUNTIF(LOWER(`Activity Type`) = 'pilates') AS FLOAT64) AS progress,
     3 AS target,
-    MAX(CASE WHEN LOWER(activities.ActivityType) = 'pilates' THEN activities.StartTime END) AS last_recorded
-  FROM `james-gcp-project.garmin.activities` AS activities
-  WHERE activities.StartTime >= DATETIME_TRUNC(CURRENT_DATETIME(), WEEK(MONDAY))
+    MAX(CASE WHEN LOWER(`Activity Type`) = 'pilates' THEN `Start Time` END) AS last_recorded
+  FROM `james-gcp-project.garmin.activity`, constants
+  WHERE `Start Time` >= constants.start_of_week
 
   UNION ALL
 
-  -- 3 Strength Activities
+  -- 3 Strength Activities (Strength)
   SELECT
     'Strength' AS goal_name,
-    CAST(COUNTIF(LOWER(activities.ActivityType) = 'strength_training') AS FLOAT64) AS progress,
+    CAST(COUNTIF(LOWER(`Activity Type`) = 'strength_training') AS FLOAT64) AS progress,
     3 AS target,
-    MAX(CASE WHEN LOWER(activities.ActivityType) = 'strength_training' THEN activities.StartTime END) AS last_recorded
-  FROM `james-gcp-project.garmin.activities` AS activities
-  WHERE activities.StartTime >= DATETIME_TRUNC(CURRENT_DATETIME(), WEEK(MONDAY))
+    MAX(CASE WHEN LOWER(`Activity Type`) = 'strength_training' THEN `Start Time` END) AS last_recorded
+  FROM `james-gcp-project.garmin.activity`, constants
+  WHERE `Start Time` >= constants.start_of_week
 ) AS goal
 ORDER BY goal.goal_name;
