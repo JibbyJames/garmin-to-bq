@@ -6,3 +6,4 @@ garmin_givemydata_repo/
 .venv/
 .venv
 .firebase/
+firebase-debug.log
