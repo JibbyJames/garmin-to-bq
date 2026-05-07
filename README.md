@@ -117,19 +117,19 @@ python sync_orchestrator.py
 ## Screenshots
 
 - **Login**: Secure login screen to access the web app via firebase/google oauth.
-  ![Login](images/login.png)
+  <p align="center"><img src="images/login.png" alt="Login"></p>
 
 - **KPIs**: Overview of health and activity Key Performance Indicators.
-  ![KPIs](images/kpis.png)
+  <p align="center"><img src="images/kpis.png" alt="KPIs"></p>
 
 - **Week Progress**: Detailed view of current weekly progress against goals.
-  ![Week Progress](images/week_progress.png)
+  <p align="center"><img src="images/week_progress.png" alt="Week Progress"></p>
 
 - **History**: Historical view comparing past weekly progress.
-  ![Week Progress History](images/week_progress_history.png)
+  <p align="center"><img src="images/week_progress_history.png" alt="Week Progress History"></p>
 
 - **Charts**: Time series graphs for visualizing health and activity metrics.
-  ![Charts](images/charts.png)
+  <p align="center"><img src="images/charts.png" alt="Charts"></p>
 
 
 ## Inspiration & References
