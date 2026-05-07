@@ -113,6 +113,25 @@ python sync_orchestrator.py
 # 5. Disable your Windows Proxy and press Enter to terminate the VPN instance when done.
 ```
 
+
+## Screenshots
+
+- **Login**: Secure login screen to access the web app via firebase/google oauth.
+  ![Login](images/login.png)
+
+- **KPIs**: Overview of health and activity Key Performance Indicators.
+  ![KPIs](images/kpis.png)
+
+- **Week Progress**: Detailed view of current weekly progress against goals.
+  ![Week Progress](images/week_progress.png)
+
+- **History**: Historical view comparing past weekly progress.
+  ![Week Progress History](images/week_progress_history.png)
+
+- **Charts**: Time series graphs for visualizing health and activity metrics.
+  ![Charts](images/charts.png)
+
+
 ## Inspiration & References
 
 The extraction logic depends entirely on the [garmin-givemydata](https://github.com/nrvim/garmin-givemydata) repository, executing via SeleniumBase.
