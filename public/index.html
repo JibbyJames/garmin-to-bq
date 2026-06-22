@@ -126,49 +126,58 @@
                 <div class="charts-controls">
                     <!-- Metrics Toggles -->
                     <div class="options-section metrics-section">
-                        <div class="section-title">METRICS</div>
+                        <div class="section-title">KPIS</div>
                         <div class="metrics-toggles">
-                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="VO2 Max"
-                                    checked><span class="gb-checkbox-label">VO2 Max</span></label>
-                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="Sleep Score"
-                                    checked><span class="gb-checkbox-label">Sleep</span></label>
-                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="Body Fat %"><span
-                                    class="gb-checkbox-label">Body Fat %</span></label>
-                            <label><input type="checkbox" class="gb-checkbox metric-toggle"
-                                    value="Resting Heart Rate"><span class="gb-checkbox-label">Resting HR</span></label>
-                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="Stress"><span
-                                    class="gb-checkbox-label">Stress</span></label>
-                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="Youth Bonus"><span
-                                    class="gb-checkbox-label">Youth Bonus</span></label>
-                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="Cardio"><span
-                                    class="gb-checkbox-label">Cardio</span></label>
-                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="Sauna"><span
-                                    class="gb-checkbox-label">Sauna</span></label>
-                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="Flexibility"><span
-                                    class="gb-checkbox-label">Flexibility</span></label>
-                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="Strength"><span
-                                    class="gb-checkbox-label">Strength</span></label>
+                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="VO2 Max"><span class="gb-checkbox-label">VO2 Max</span></label>
+                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="Sleep Score"><span class="gb-checkbox-label">Sleep</span></label>
+                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="Body Fat %" checked><span class="gb-checkbox-label">Body Fat %</span></label>
+                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="Resting Heart Rate"><span class="gb-checkbox-label">Resting HR</span></label>
+                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="Stress"><span class="gb-checkbox-label">Stress</span></label>
+                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="Youth Bonus"><span class="gb-checkbox-label">Youth Bonus</span></label>
+                        </div>
+                    </div>
+                    <div class="options-section metrics-section">
+                        <div class="section-title">BODY COMP</div>
+                        <div class="metrics-toggles">
+                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="Weight"><span class="gb-checkbox-label">Weight</span></label>
+                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="Fat Mass"><span class="gb-checkbox-label">Fat Mass</span></label>
+                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="Muscle Mass"><span class="gb-checkbox-label">Muscle Mass</span></label>
+                        </div>
+                    </div>
+                    <div class="options-section metrics-section">
+                        <div class="section-title">NUTRITION</div>
+                        <div class="metrics-toggles">
+                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="Calories"><span class="gb-checkbox-label">Calories</span></label>
+                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="Fat"><span class="gb-checkbox-label">Fat</span></label>
+                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="Protein"><span class="gb-checkbox-label">Protein</span></label>
+                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="Carbs"><span class="gb-checkbox-label">Carbs</span></label>
+                        </div>
+                    </div>
+                    <div class="options-section metrics-section">
+                        <div class="section-title">ACTIVITIES</div>
+                        <div class="metrics-toggles">
+                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="Cardio"><span class="gb-checkbox-label">Cardio</span></label>
+                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="Sauna"><span class="gb-checkbox-label">Sauna</span></label>
+                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="Flexibility"><span class="gb-checkbox-label">Flexibility</span></label>
+                            <label><input type="checkbox" class="gb-checkbox metric-toggle" value="Strength"><span class="gb-checkbox-label">Strength</span></label>
                         </div>
                     </div>
 
                     <div class="options-row">
                         <!-- Date Range Radio -->
-                        <div class="options-section">
+                        <div class="options-section" style="flex: 3;">
                             <div class="section-title">DATE RANGE</div>
                             <div class="radio-group" id="range-group">
-                                <label><input type="radio" name="range" class="gb-radio" value="1M" checked><span
-                                        class="gb-radio-label">1M</span></label>
-                                <label><input type="radio" name="range" class="gb-radio" value="6M"><span
-                                        class="gb-radio-label">6M</span></label>
-                                <label><input type="radio" name="range" class="gb-radio" value="1Y"><span
-                                        class="gb-radio-label">1Y</span></label>
-                                <label><input type="radio" name="range" class="gb-radio" value="MAX"><span
-                                        class="gb-radio-label">MAX</span></label>
+                                <label><input type="radio" name="range" class="gb-radio" value="1M" checked><span class="gb-radio-label">1M</span></label>
+                                <label><input type="radio" name="range" class="gb-radio" value="3M"><span class="gb-radio-label">3M</span></label>
+                                <label><input type="radio" name="range" class="gb-radio" value="6M"><span class="gb-radio-label">6M</span></label>
+                                <label><input type="radio" name="range" class="gb-radio" value="1Y"><span class="gb-radio-label">1Y</span></label>
+                                <label><input type="radio" name="range" class="gb-radio" value="MAX"><span class="gb-radio-label">MAX</span></label>
                             </div>
                         </div>
 
                         <!-- Aggregation Radio -->
-                        <div class="options-section">
+                        <div class="options-section" style="flex: 2;">
                             <div class="section-title">AGGREGATE BY</div>
                             <div class="radio-group" id="agg-group">
                                 <label><input type="radio" name="agg" class="gb-radio" value="day" checked><span
@@ -301,6 +310,49 @@
         let currentWindowOffset = 0; // 0 = current, 1 = previous, etc.
         let isChartsLoaded = false;
 
+        function createPattern(type, color) {
+            let canvas = document.createElement('canvas');
+            let ctx = canvas.getContext('2d');
+            canvas.width = 10;
+            canvas.height = 10;
+            
+            ctx.fillStyle = 'rgba(15, 56, 15, 0.1)';
+            ctx.fillRect(0, 0, 10, 10);
+            
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = 2;
+            
+            if (type === 'solid') {
+                ctx.fillStyle = 'rgba(15, 56, 15, 0.7)';
+                ctx.fillRect(0, 0, 10, 10);
+            } else if (type === 'diagonal') {
+                ctx.beginPath();
+                ctx.moveTo(0, 10);
+                ctx.lineTo(10, 0);
+                ctx.stroke();
+            } else if (type === 'cross') {
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(10, 10);
+                ctx.moveTo(10, 0);
+                ctx.lineTo(0, 10);
+                ctx.stroke();
+            } else if (type === 'dots') {
+                ctx.beginPath();
+                ctx.arc(5, 5, 3, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            return ctx.createPattern(canvas, 'repeat');
+        }
+
+        const patterns = {
+            'Cardio': createPattern('solid', '#0f380f'),
+            'Sauna': createPattern('diagonal', '#0f380f'),
+            'Flexibility': createPattern('cross', '#0f380f'),
+            'Strength': createPattern('dots', '#0f380f')
+        };
+
         const metricConfig = {
             'VO2 Max': { borderDash: [], pointStyle: 'circle', yAxisID: 'y' },
             'Sleep Score': { borderDash: [5, 5], pointStyle: 'rect', yAxisID: 'y' },
@@ -308,10 +360,17 @@
             'Resting Heart Rate': { borderDash: [10, 5, 2, 5], pointStyle: 'cross', yAxisID: 'y' },
             'Stress': { borderDash: [15, 5], pointStyle: 'star', yAxisID: 'y' },
             'Youth Bonus': { borderDash: [5, 10], pointStyle: 'rectRot', yAxisID: 'y1' },
+            'Weight': { borderDash: [], pointStyle: 'circle', yAxisID: 'y1' },
+            'Fat Mass': { borderDash: [5, 5], pointStyle: 'rect', yAxisID: 'y1' },
+            'Muscle Mass': { borderDash: [2, 2], pointStyle: 'triangle', yAxisID: 'y1' },
+            'Calories': { borderDash: [], pointStyle: 'circle', yAxisID: 'y' },
+            'Fat': { borderDash: [5, 5], pointStyle: 'rect', yAxisID: 'y' },
+            'Protein': { borderDash: [2, 2], pointStyle: 'triangle', yAxisID: 'y' },
+            'Carbs': { borderDash: [10, 5, 2, 5], pointStyle: 'cross', yAxisID: 'y' },
             'Cardio': { borderDash: [], pointStyle: 'rectRounded', yAxisID: 'y' },
             'Sauna': { borderDash: [2, 2], pointStyle: 'crossRot', yAxisID: 'y' },
-            'Flexibility': { borderDash: [5, 5], pointStyle: 'line', yAxisID: 'y1' },
-            'Strength': { borderDash: [15, 5], pointStyle: 'dash', yAxisID: 'y1' }
+            'Flexibility': { borderDash: [5, 5], pointStyle: 'line', yAxisID: 'y' },
+            'Strength': { borderDash: [15, 5], pointStyle: 'dash', yAxisID: 'y' }
         };
 
         // SPA Tab Switching Logic
@@ -665,7 +724,8 @@
             let latestDate = new Date(latestDateStr);
 
             let monthsToSubtract = 1;
-            if (currentRange === '6M') monthsToSubtract = 6;
+            if (currentRange === '3M') monthsToSubtract = 3;
+            else if (currentRange === '6M') monthsToSubtract = 6;
             else if (currentRange === '1Y') monthsToSubtract = 12;
             else if (currentRange === 'MAX') monthsToSubtract = 1200; // 100 years
 
@@ -694,12 +754,27 @@
 
             let datasets = activeMetrics.map(metric => {
                 let conf = metricConfig[metric] || { borderDash: [], pointStyle: 'circle', yAxisID: 'y' };
+                let isActivity = ['Cardio', 'Sauna', 'Flexibility', 'Strength'].includes(metric);
+                
+                let mappedData = filteredData.map(d => {
+                    if (d[metric] !== undefined && d[metric] !== null) {
+                        let val = d[metric];
+                        if (metric === 'Flexibility' || metric === 'Strength') {
+                            val = val * 20;
+                        }
+                        return val;
+                    }
+                    return null;
+                });
+
                 return {
                     label: metric,
-                    data: filteredData.map(d => d[metric] !== undefined ? d[metric] : null),
+                    data: mappedData,
+                    type: isActivity ? 'bar' : 'line',
+                    stack: isActivity ? 'Activities' : metric,
                     borderColor: '#0f380f',
-                    backgroundColor: '#0f380f',
-                    borderWidth: 2,
+                    backgroundColor: isActivity ? patterns[metric] : '#0f380f',
+                    borderWidth: isActivity ? 1 : 2,
                     borderDash: conf.borderDash,
                     pointStyle: conf.pointStyle,
                     pointRadius: 4,
@@ -745,6 +820,7 @@
                     },
                     scales: {
                         x: {
+                            stacked: true,
                             ticks: {
                                 font: { family: "'VT323', monospace", size: 12 },
                                 color: '#0f380f',
@@ -753,6 +829,7 @@
                             grid: { color: 'rgba(139, 172, 15, 0.5)' }
                         },
                         y: {
+                            stacked: true,
                             type: 'linear',
                             display: true,
                             position: 'left',

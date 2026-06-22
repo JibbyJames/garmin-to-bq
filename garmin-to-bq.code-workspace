@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "garmin_givemydata_repo"
+		},
+		{
+			"path": "../../../.garmin-givemydata"
+		}
+	],
+	"settings": {}
+}

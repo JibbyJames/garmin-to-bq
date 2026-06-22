@@ -35,7 +35,7 @@ WITH metrics_raw AS (
   WHERE `Avg Stress` IS NOT NULL
 
   UNION ALL
-  
+
   -- Cardio (Vigorous Intensity min)
   SELECT DATE(`Start Time`) as Date, 'Cardio' as metric, CAST(`Vigorous Intensity _min_` as FLOAT64) as value, 'SUM' as agg_method 
   FROM `james-gcp-project.garmin.activity` 
@@ -44,25 +44,59 @@ WITH metrics_raw AS (
     AND (LOWER(`Activity Type`) != 'strength_training' OR `Activity Type` IS NULL)
 
   UNION ALL
-  
+
   -- Sauna
   SELECT DATE(`Start Time`) as Date, 'Sauna' as metric, CAST(`Duration _s_` / 60.0 as FLOAT64) as value, 'SUM' as agg_method 
   FROM `james-gcp-project.garmin.activity` 
   WHERE LOWER(`Activity Name`) = 'martial arts'
 
   UNION ALL
-  
+
   -- Flexibility
   SELECT DATE(`Start Time`) as Date, 'Flexibility' as metric, 1.0 as value, 'SUM' as agg_method 
   FROM `james-gcp-project.garmin.activity` 
   WHERE LOWER(`Activity Type`) = 'pilates'
 
   UNION ALL
-  
+
   -- Strength
   SELECT DATE(`Start Time`) as Date, 'Strength' as metric, 1.0 as value, 'SUM' as agg_method 
   FROM `james-gcp-project.garmin.activity` 
   WHERE LOWER(`Activity Type`) = 'strength_training'
+
+  UNION ALL
+
+  -- Nutrition Metrics
+  SELECT Date, 'Calories' AS metric, NULLIF(CAST(Calories AS FLOAT64), 0) AS value, 'AVG' AS agg_method
+  FROM `james-gcp-project.garmin.nutrition_summary`
+  WHERE Calories IS NOT NULL
+  UNION ALL
+  SELECT Date, 'Fat' AS metric, NULLIF(Fat, 0) AS value, 'AVG' AS agg_method
+  FROM `james-gcp-project.garmin.nutrition_summary`
+  WHERE Fat IS NOT NULL
+  UNION ALL
+  SELECT Date, 'Protein' AS metric, NULLIF(Protein, 0) AS value, 'AVG' AS agg_method
+  FROM `james-gcp-project.garmin.nutrition_summary`
+  WHERE Protein IS NOT NULL
+  UNION ALL
+  SELECT Date, 'Carbs' AS metric, NULLIF(Carbs, 0) AS value, 'AVG' AS agg_method
+  FROM `james-gcp-project.garmin.nutrition_summary`
+  WHERE Carbs IS NOT NULL
+
+  UNION ALL
+
+  -- Weight Metrics (Grams to KG conversion)
+  SELECT Date, 'Weight' AS metric, `Weight _kg_` / 1000.0 AS value, 'AVG' AS agg_method
+  FROM `james-gcp-project.garmin.weight`
+  WHERE `Weight _kg_` IS NOT NULL
+  UNION ALL
+  SELECT Date, 'Fat Mass' AS metric, (`Weight _kg_` * `Body Fat _%_` / 100.0) / 1000.0 AS value, 'AVG' AS agg_method
+  FROM `james-gcp-project.garmin.weight`
+  WHERE `Weight _kg_` IS NOT NULL AND `Body Fat _%_` IS NOT NULL
+  UNION ALL
+  SELECT Date, 'Muscle Mass' AS metric, `Muscle Mass _kg_` / 1000.0 AS value, 'AVG' AS agg_method
+  FROM `james-gcp-project.garmin.weight`
+  WHERE `Muscle Mass _kg_` IS NOT NULL
 ),
 daily AS (
   SELECT Date AS date, metric, 
@@ -88,4 +122,4 @@ monthly AS (
 SELECT date, metric, ROUND(value, 2) AS value, agg_type FROM daily
 UNION ALL SELECT date, metric, ROUND(value, 2) AS value, agg_type FROM weekly
 UNION ALL SELECT date, metric, ROUND(value, 2) AS value, agg_type FROM monthly
-ORDER BY date DESC;
+ORDER BY date DESC, metric ASC;
