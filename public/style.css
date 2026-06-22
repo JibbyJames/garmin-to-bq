@@ -490,6 +490,8 @@ body {
 .metrics-section {
     padding-left: 30px;
     padding-right: 30px;
+    padding-top: 10px;
+    padding-bottom: 10px;
 }
 
 .options-row {
@@ -516,7 +518,7 @@ body {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 8px;
+    gap: 5px;
 }
 
 .gb-checkbox {
@@ -528,7 +530,7 @@ body {
     border: 2px solid var(--gb-darkest);
     background-color: var(--gb-lightest);
     color: var(--gb-darkest);
-    padding: 5px;
+    padding: 4px;
     font-size: 14px;
     text-transform: uppercase;
     text-align: center;
