@@ -17,7 +17,7 @@ WITH metrics_raw AS (
   -- Body Fat %
   SELECT Date, 'Body Fat %' AS metric, NULLIF(`Body Fat _%_`, 0) AS value, 'AVG' AS agg_method
   FROM `james-gcp-project.garmin.weight`
-  WHERE `Body Fat _%_` IS NOT NULL
+  WHERE NULLIF(`Body Fat _%_`, 0) IS NOT NULL
   UNION ALL
   -- Resting Heart Rate
   SELECT Date, 'Resting Heart Rate' AS metric, NULLIF(CAST(`Resting HR _bpm_` AS FLOAT64), 0) AS value, 'AVG' AS agg_method
@@ -88,15 +88,15 @@ WITH metrics_raw AS (
   -- Weight Metrics (Grams to KG conversion)
   SELECT Date, 'Weight' AS metric, `Weight _kg_` / 1000.0 AS value, 'AVG' AS agg_method
   FROM `james-gcp-project.garmin.weight`
-  WHERE `Weight _kg_` IS NOT NULL
+  WHERE `Weight _kg_` IS NOT NULL AND NULLIF(`Body Fat _%_`, 0) IS NOT NULL
   UNION ALL
   SELECT Date, 'Fat Mass' AS metric, (`Weight _kg_` * `Body Fat _%_` / 100.0) / 1000.0 AS value, 'AVG' AS agg_method
   FROM `james-gcp-project.garmin.weight`
-  WHERE `Weight _kg_` IS NOT NULL AND `Body Fat _%_` IS NOT NULL
+  WHERE `Weight _kg_` IS NOT NULL AND NULLIF(`Body Fat _%_`, 0) IS NOT NULL
   UNION ALL
   SELECT Date, 'Muscle Mass' AS metric, `Muscle Mass _kg_` / 1000.0 AS value, 'AVG' AS agg_method
   FROM `james-gcp-project.garmin.weight`
-  WHERE `Muscle Mass _kg_` IS NOT NULL
+  WHERE `Muscle Mass _kg_` IS NOT NULL AND NULLIF(`Body Fat _%_`, 0) IS NOT NULL
 ),
 daily AS (
   SELECT Date AS date, metric, 
